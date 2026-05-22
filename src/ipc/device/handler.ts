@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { createHash, randomBytes } from 'crypto';
 import { isBoolean, isNumber, isObjectLike, isString } from 'lodash-es';
-import { type DeviceProfile } from '../../types/account';
+import { type AntigravityAppTarget, type DeviceProfile } from '../../types/account';
 import { logger } from '../../utils/logger';
 import { getAgentDir, getAntigravityDbPaths, getAntigravityStoragePaths } from '../../utils/paths';
 
@@ -94,7 +94,7 @@ function isSqliteBusyError(error: unknown): boolean {
   return false;
 }
 
-function resolveExistingPath(paths: string[]): string | null {
+function getExistingPath(paths: string[]): string | null {
   for (const targetPath of paths) {
     if (fs.existsSync(targetPath)) {
       return targetPath;
@@ -514,16 +514,16 @@ export function isIdentityProfileApplyEnabled(): boolean {
   return !isSafeModeActiveNow();
 }
 
-export function getStoragePath(): string {
-  const storagePath = resolveExistingPath(getAntigravityStoragePaths());
+export function getStoragePath(appTarget?: AntigravityAppTarget): string {
+  const storagePath = getExistingPath(getAntigravityStoragePaths(appTarget));
   if (!storagePath) {
     throw new Error('storage_json_not_found');
   }
   return storagePath;
 }
 
-export function getStorageDirectoryPath(): string {
-  return path.dirname(getStoragePath());
+export function getStorageDirectoryPath(appTarget?: AntigravityAppTarget): string {
+  return path.dirname(getStoragePath(appTarget));
 }
 
 export function loadGlobalOriginalProfile(): DeviceProfile | null {
@@ -574,13 +574,13 @@ export function readCurrentDeviceProfile(storagePath?: string): DeviceProfile {
   };
 }
 
-export function ensureGlobalOriginalFromCurrentStorage(): void {
+export function ensureGlobalOriginalFromCurrentStorage(appTarget?: AntigravityAppTarget): void {
   if (loadGlobalOriginalProfile()) {
     return;
   }
 
   try {
-    const profile = readCurrentDeviceProfile();
+    const profile = readCurrentDeviceProfile(getStoragePath(appTarget));
     saveGlobalOriginalProfile(profile);
   } catch (error) {
     logger.warn('Failed to capture baseline device profile from storage.json', error);
@@ -600,8 +600,12 @@ export function generateDeviceProfile(): DeviceProfile {
   return profile;
 }
 
-export function syncStateServiceMachineIdValue(serviceMachineId: string, dbPath?: string): void {
-  const targetDbPath = dbPath || resolveExistingPath(getAntigravityDbPaths());
+export function syncStateServiceMachineIdValue(
+  serviceMachineId: string,
+  dbPath?: string,
+  appTarget?: AntigravityAppTarget,
+): void {
+  const targetDbPath = dbPath || getExistingPath(getAntigravityDbPaths(appTarget));
   if (!targetDbPath) {
     throw new Error('state_vscdb_not_found');
   }
@@ -635,8 +639,11 @@ export function syncStateServiceMachineIdValue(serviceMachineId: string, dbPath?
   throw new Error('sync_state_service_machine_id_failed');
 }
 
-export function applyDeviceProfile(profile: DeviceProfile): string {
-  const storagePath = getStoragePath();
+export function applyDeviceProfile(
+  profile: DeviceProfile,
+  appTarget?: AntigravityAppTarget,
+): string {
+  const storagePath = getStoragePath(appTarget);
   const backupPath = `${storagePath}.backup`;
   const stateDbPath = getStateDbPathFromStorage(storagePath);
   const stateBackupPath = `${stateDbPath}.backup`;
@@ -667,7 +674,7 @@ export function applyDeviceProfile(profile: DeviceProfile): string {
     writeJsonAtomically(storagePath, storage);
 
     stage = 'prepare_sync_state';
-    syncStateServiceMachineIdValue(profile.devDeviceId, stateDbPath);
+    syncStateServiceMachineIdValue(profile.devDeviceId, stateDbPath, appTarget);
 
     stage = 'verify_storage';
     ensureStorageProfileApplied(profile, storagePath);

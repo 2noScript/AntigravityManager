@@ -17,6 +17,7 @@ import {
 } from './handler';
 import {
   AccountSchema,
+  AntigravityAppTargetSchema,
   DeviceProfileSchema,
   DeviceProfilesSnapshotSchema,
 } from '../../types/account';
@@ -31,10 +32,10 @@ export const accountRouter = os.router({
   }),
 
   switchAccount: os
-    .input(z.object({ accountId: z.string() }))
+    .input(z.object({ accountId: z.string(), appTarget: AntigravityAppTargetSchema.optional() }))
     .output(z.void())
     .handler(async ({ input }) => {
-      await switchAccount(input.accountId);
+      await switchAccount(input.accountId, input.appTarget);
     }),
 
   deleteAccount: os

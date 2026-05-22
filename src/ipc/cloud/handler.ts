@@ -21,12 +21,15 @@ import {
   readCurrentDeviceProfile,
   saveGlobalOriginalProfile,
 } from '../../ipc/device/handler';
-import { getAntigravityDbPaths, getAntigravityDbPathsForEdition } from '../../utils/paths';
+import { getAntigravityDbPaths, refreshAntigravityProcessCache } from '../../utils/paths';
 import { runWithSwitchGuard } from '../../ipc/switchGuard';
 import { executeSwitchFlow } from '../../ipc/switchFlow';
-import type { DeviceProfile, DeviceProfilesSnapshot } from '../../types/account';
+import type {
+  AntigravityAppTarget,
+  DeviceProfile,
+  DeviceProfilesSnapshot,
+} from '../../types/account';
 import { classifyAccountStatusFromError, extractErrorMessage } from '../../utils/account-status';
-import { ConfigManager } from '../../ipc/config/manager';
 
 // Helper to update tray
 function notifyTrayUpdate(account: CloudAccount) {
@@ -375,7 +378,10 @@ export async function refreshAccountQuota(accountId: string): Promise<CloudAccou
       account.token = mergeRefreshedToken(account.token, refreshedToken, now);
       await CloudAccountRepo.updateToken(account.id, account.token);
     } catch (error) {
-      logger.error(`Failed to refresh token during quota refresh precheck for ${account.email}`, error);
+      logger.error(
+        `Failed to refresh token during quota refresh precheck for ${account.email}`,
+        error,
+      );
       await markAccountStatusFromError(account, error);
       throw new Error(`Token refresh failed for ${account.email}. Please try logging in again.`);
     }
@@ -495,7 +501,10 @@ export async function refreshAccountQuota(accountId: string): Promise<CloudAccou
   }
 }
 
-export async function switchCloudAccount(accountId: string): Promise<void> {
+export async function switchCloudAccount(
+  accountId: string,
+  appTarget?: AntigravityAppTarget,
+): Promise<void> {
   await runWithSwitchGuard('cloud-account-switch', async () => {
     try {
       const account = await CloudAccountRepo.getAccount(accountId);
@@ -504,8 +513,9 @@ export async function switchCloudAccount(accountId: string): Promise<void> {
       }
 
       logger.info(`Switching to cloud account: ${account.email} (${account.id})`);
+      await refreshAntigravityProcessCache(appTarget);
 
-      ensureGlobalOriginalFromCurrentStorage();
+      ensureGlobalOriginalFromCurrentStorage(appTarget);
       if (!account.device_profile) {
         const generated = generateDeviceProfile();
         CloudAccountRepo.setDeviceBinding(account.id, generated, 'auto_generated');
@@ -548,30 +558,36 @@ export async function switchCloudAccount(accountId: string): Promise<void> {
 
       await executeSwitchFlow({
         scope: 'cloud',
+        appTarget,
         targetProfile: account.device_profile || null,
         applyFingerprint: isIdentityProfileApplyEnabled(),
         processExitTimeoutMs: 10000,
-        edition: ConfigManager.getCachedConfig()?.ideEdition || undefined,
-        performSwitch: async (edition) => {
-          // 3. Backup Database (Optimized to avoid race conditions)
-          const dbPaths = edition
-            ? getAntigravityDbPathsForEdition(edition)
-            : getAntigravityDbPaths();
-          for (const dbPath of dbPaths) {
-            try {
-              const backupPath = `${dbPath}.backup`;
-              await fs.promises.copyFile(dbPath, backupPath);
-              logger.info(`Backed up database to ${backupPath}`);
-              break; // Success, stop trying other paths
-            } catch (error: any) {
-              // If file not found, just try the next path
-              if (error.code === 'ENOENT') continue;
-              logger.error(`Failed to backup database at ${dbPath}`, error);
+        performSwitch: async () => {
+          const injectionMode = CloudAccountRepo.shouldInjectTokenIntoCredentialStore(appTarget)
+            ? 'credential-store'
+            : 'sqlite';
+
+          if (injectionMode === 'sqlite') {
+            // 3. Backup Database (Optimized to avoid race conditions)
+            const dbPaths = getAntigravityDbPaths(appTarget);
+            for (const dbPath of dbPaths) {
+              try {
+                const backupPath = `${dbPath}.backup`;
+                await fs.promises.copyFile(dbPath, backupPath);
+                logger.info(`Backed up database to ${backupPath}`);
+                break; // Success, stop trying other paths
+              } catch (error: any) {
+                // If file not found, just try the next path
+                if (error.code === 'ENOENT') {
+                  continue;
+                }
+                logger.error(`Failed to backup database at ${dbPath}`, error);
+              }
             }
           }
 
           // 4. Inject Token
-          CloudAccountRepo.injectCloudToken(account, edition);
+          CloudAccountRepo.injectCloudTokenWithStorageStrategy(account, appTarget);
 
           // 5. Update usage and active status
           CloudAccountRepo.updateLastUsed(account.id);

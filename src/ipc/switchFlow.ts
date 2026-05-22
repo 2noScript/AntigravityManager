@@ -1,5 +1,6 @@
-import { type DeviceProfile } from '../types/account';
+import { type AntigravityAppTarget, type DeviceProfile } from '../types/account';
 import { logger } from '../utils/logger';
+import { refreshAntigravityProcessCache } from '../utils/paths';
 import { closeAntigravity, startAntigravity, _waitForProcessExit } from './process/handler';
 import { applyDeviceProfile } from './device/handler';
 import {
@@ -7,15 +8,14 @@ import {
   recordSwitchFailure,
   recordSwitchSuccess,
 } from './switchMetrics';
-import type { IdeEdition } from '../types/config';
 
 export interface SwitchFlowOptions {
   scope: 'local' | 'cloud';
   targetProfile: DeviceProfile | null;
+  appTarget?: AntigravityAppTarget;
   applyFingerprint: boolean;
   processExitTimeoutMs: number;
-  edition?: IdeEdition;
-  performSwitch: (edition?: IdeEdition) => Promise<void>;
+  performSwitch: () => Promise<void>;
 }
 
 function getErrorMessage(error: unknown): string {
@@ -53,13 +53,15 @@ function toSwitchFailureReason(stage: string, error: unknown): SwitchFailureReas
 }
 
 export async function executeSwitchFlow(options: SwitchFlowOptions): Promise<void> {
-  const { scope, targetProfile, applyFingerprint, processExitTimeoutMs, edition, performSwitch } = options;
+  const { scope, appTarget, targetProfile, applyFingerprint, processExitTimeoutMs, performSwitch } =
+    options;
 
   let stage = 'close';
   try {
-    await closeAntigravity(edition);
+    await refreshAntigravityProcessCache(appTarget);
+    await closeAntigravity(appTarget);
     try {
-      await _waitForProcessExit(processExitTimeoutMs, 100, edition);
+      await _waitForProcessExit(processExitTimeoutMs, 100, appTarget);
     } catch (error) {
       logger.warn('Process did not exit cleanly within timeout, but proceeding...', error);
     }
@@ -70,7 +72,7 @@ export async function executeSwitchFlow(options: SwitchFlowOptions): Promise<voi
         stage = 'missing_profile';
         throw new Error('Account has no bound identity profile');
       }
-      applyDeviceProfile(targetProfile);
+      applyDeviceProfile(targetProfile, appTarget);
     } else {
       logger.warn(
         'Identity profile apply is disabled by CRACK_IDENTITY_PROFILE_APPLY_ENABLED / CRACK_DEVICE_FINGERPRINT_ENABLED',
@@ -78,9 +80,9 @@ export async function executeSwitchFlow(options: SwitchFlowOptions): Promise<voi
     }
 
     stage = 'switch';
-    await performSwitch(edition);
+    await performSwitch();
     stage = 'start';
-    await startAntigravity(edition);
+    await startAntigravity(appTarget);
     recordSwitchSuccess(scope);
   } catch (error) {
     const reason = toSwitchFailureReason(stage, error);

@@ -1,5 +1,5 @@
 import { ipc } from '@/ipc/manager';
-import type { DeviceProfile } from '@/types/account';
+import type { AntigravityAppTarget, DeviceProfile } from '@/types/account';
 import { isValidProxyUrl } from '@/utils/url';
 
 export function addGoogleAccount(input: { authCode: string; oauthClientKey?: string }) {
@@ -19,7 +19,7 @@ export function refreshAccountQuota(input: { accountId: string }) {
   return ipc.client.cloud.refreshAccountQuota(input);
 }
 
-export function switchCloudAccount(input: { accountId: string }) {
+export function switchCloudAccount(input: { accountId: string; appTarget?: AntigravityAppTarget }) {
   return ipc.client.cloud.switchCloudAccount(input);
 }
 

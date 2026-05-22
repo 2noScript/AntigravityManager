@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Account } from '@/types/account';
+import type { AntigravityAppTarget } from '@/types/account';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -10,7 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreVertical, Trash2, RefreshCw } from 'lucide-react';
+import { ArrowRightLeft, MoreVertical, Repeat2, Trash2, RefreshCw } from 'lucide-react';
 import { formatDistanceToNow, type Locale } from 'date-fns';
 import { enUS, zhCN, ru, vi } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -28,7 +29,7 @@ const DATE_LOCALE_MAP: Record<string, Locale> = {
 interface AccountCardProps {
   account: Account;
   isCurrent: boolean;
-  onSwitch: (id: string) => void;
+  onSwitch: (id: string, appTarget?: AntigravityAppTarget) => void;
   onDelete: (id: string) => void;
   isSwitching?: boolean;
   isDeleting?: boolean;
@@ -167,6 +168,26 @@ export const AccountCard: React.FC<AccountCardProps> = ({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSwitch(account.id);
+                  }}
+                  disabled={isSwitching}
+                >
+                  <ArrowRightLeft className="mr-2 h-4 w-4" />
+                  {t('account.switchToClassic', 'Switch to Antigravity (Classic)')}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSwitch(account.id, 'ide');
+                  }}
+                  disabled={isSwitching}
+                >
+                  <Repeat2 className="mr-2 h-4 w-4" />
+                  {t('account.switchToIde', 'Switch to Antigravity IDE')}
+                </DropdownMenuItem>
                 <DropdownMenuItem
                   className="text-destructive focus:text-destructive"
                   onClick={(e) => {

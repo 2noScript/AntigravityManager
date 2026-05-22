@@ -20,7 +20,17 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
-import { MoreVertical, Trash, RefreshCw, Box, Power, Fingerprint, Eye, EyeOff } from 'lucide-react';
+import {
+  MoreVertical,
+  Trash,
+  RefreshCw,
+  Box,
+  Power,
+  Fingerprint,
+  Eye,
+  EyeOff,
+  Repeat2,
+} from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { useTranslation } from 'react-i18next';
@@ -39,6 +49,7 @@ import { useState } from 'react';
 import { useSetAccountProxy } from '@/hooks/useCloudAccounts';
 import { isValidProxyUrl } from '@/utils/url';
 import { getValidationBlockedStatusLabel } from '@/components/accountValidationStatus';
+import type { AntigravityAppTarget } from '@/types/account';
 
 type ModelQuotaEntry = [string, CloudQuotaModelInfo];
 
@@ -157,7 +168,7 @@ interface CloudAccountCardProps {
   account: CloudAccount;
   onRefresh: (id: string) => void;
   onDelete: (id: string) => void;
-  onSwitch: (id: string) => void;
+  onSwitch: (id: string, appTarget?: AntigravityAppTarget) => void;
   onManageIdentity: (id: string) => void;
   isSelected?: boolean;
   onToggleSelection?: (id: string, selected: boolean) => void;
@@ -247,7 +258,7 @@ export function CloudAccountCard({
           <span className="text-muted-foreground/70 text-[10px] font-bold tracking-wider uppercase">
             {title}
           </span>
-          <div className="bg-border/50 h-[1px] flex-1" />
+          <div className="bg-border/50 h-px flex-1" />
         </div>
         {models.map(([modelName, info]) => (
           <div
@@ -461,7 +472,11 @@ export function CloudAccountCard({
             <DropdownMenuLabel>{t('cloud.card.actions')}</DropdownMenuLabel>
             <DropdownMenuItem onClick={() => onSwitch(account.id)} disabled={isSwitching}>
               <Power className="mr-2 h-4 w-4" />
-              {t('cloud.card.useAccount')}
+              {t('account.switchToClassic', 'Switch to Antigravity (Classic)')}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onSwitch(account.id, 'ide')} disabled={isSwitching}>
+              <Repeat2 className="mr-2 h-4 w-4" />
+              {t('account.switchToIde', 'Switch to Antigravity IDE')}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => onRefresh(account.id)} disabled={isRefreshing}>
@@ -606,7 +621,7 @@ interface CompactCloudAccountCardProps {
   account: CloudAccount;
   onRefresh: (id: string) => void;
   onDelete: (id: string) => void;
-  onSwitch: (id: string) => void;
+  onSwitch: (id: string, appTarget?: AntigravityAppTarget) => void;
   onManageIdentity: (id: string) => void;
   isRefreshing?: boolean;
   isDeleting?: boolean;
@@ -830,7 +845,11 @@ export function CompactCloudAccountCard({
             <DropdownMenuLabel>{t('cloud.card.actions')}</DropdownMenuLabel>
             <DropdownMenuItem onClick={() => onSwitch(account.id)} disabled={isSwitching}>
               <Power className="mr-2 h-4 w-4" />
-              {t('cloud.card.useAccount')}
+              {t('account.switchToClassic', 'Switch to Antigravity (Classic)')}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onSwitch(account.id, 'ide')} disabled={isSwitching}>
+              <Repeat2 className="mr-2 h-4 w-4" />
+              {t('account.switchToIde', 'Switch to Antigravity IDE')}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => onRefresh(account.id)} disabled={isRefreshing}>

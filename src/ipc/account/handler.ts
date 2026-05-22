@@ -1,20 +1,28 @@
 import fs from 'fs';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
-import { getAccountsFilePath, getBackupsDir } from '../../utils/paths';
+import {
+  getAccountsFilePath,
+  getBackupsDir,
+  refreshAntigravityProcessCache,
+} from '../../utils/paths';
 import { logger } from '../../utils/logger';
 import {
   Account,
   AccountBackupData,
+  AntigravityAppTarget,
   DeviceProfile,
   DeviceProfilesSnapshot,
   DeviceProfileVersion,
 } from '../../types/account';
 import {
   backupAccount as dbBackup,
+  extractCredentialStoreTokenFromBackup,
   restoreAccount as dbRestore,
   getCurrentAccountInfo,
 } from '../database/handler';
+import { CloudAccountRepo } from '../database/cloudHandler';
+import { writeAntigravityCredentialStoreToken } from '../database/antigravityCredentialStore';
 import {
   applyDeviceProfile,
   ensureGlobalOriginalFromCurrentStorage,
@@ -28,7 +36,6 @@ import {
 import { runWithSwitchGuard } from '../switchGuard';
 import { executeSwitchFlow } from '../switchFlow';
 import { shell } from 'electron';
-import { ConfigManager } from '../config/manager';
 
 type AccountIndex = Record<string, Account>;
 const SWITCH_EXIT_TIMEOUT_MS = 10000;
@@ -108,15 +115,15 @@ function saveAccountsIndex(accounts: AccountIndex): void {
  * @throws {Error} If the accounts index cannot be loaded.
  */
 export async function listAccountsData(): Promise<Account[]> {
-  const accountsObj = loadAccountsIndex();
-  const accountsList = Object.values(accountsObj);
+  const accountIndex = loadAccountsIndex();
+  const accountList = Object.values(accountIndex);
   // NOTE: Sort by last_used descending
-  accountsList.sort((a, b) => {
-    const aTime = a.last_used || '';
-    const bTime = b.last_used || '';
-    return bTime.localeCompare(aTime);
+  accountList.sort((leftAccount, rightAccount) => {
+    const leftLastUsed = leftAccount.last_used || '';
+    const rightLastUsed = rightAccount.last_used || '';
+    return rightLastUsed.localeCompare(leftLastUsed);
   });
-  return accountsList;
+  return accountList;
 }
 
 /**
@@ -126,24 +133,25 @@ export async function listAccountsData(): Promise<Account[]> {
  */
 export async function addAccountSnapshot(): Promise<Account> {
   logger.info('Adding account snapshot...');
+  await refreshAntigravityProcessCache();
 
   // NOTE Get current account info from DB
-  const info = getCurrentAccountInfo();
-  if (!info.isAuthenticated) {
-    const errorMsg =
+  const currentAccountInfo = getCurrentAccountInfo();
+  if (!currentAccountInfo.isAuthenticated) {
+    const message =
       'No authenticated account found. Please ensure Antigravity is running and you are logged in.';
-    logger.error(errorMsg);
-    throw new Error(errorMsg);
+    logger.error(message);
+    throw new Error(message);
   }
 
   const accounts = loadAccountsIndex();
   const now = new Date().toISOString();
 
   // NOTE Find existing account by email
-  let existingId: string | null = null;
-  for (const [id, acc] of Object.entries(accounts)) {
-    if (acc.email === info.email) {
-      existingId = id;
+  let existingAccountId: string | null = null;
+  for (const [accountId, existingAccount] of Object.entries(accounts)) {
+    if (existingAccount.email === currentAccountInfo.email) {
+      existingAccountId = accountId;
       break;
     }
   }
@@ -151,19 +159,19 @@ export async function addAccountSnapshot(): Promise<Account> {
   let account: Account;
   let backupPath: string;
 
-  if (existingId) {
+  if (existingAccountId) {
     // NOTE Update existing account
-    account = accounts[existingId];
+    account = accounts[existingAccountId];
 
     // NOTE Preserve custom name: only update if we have a name from DB AND it's not the default email prefix
     // NOTE  if not name or name == email.split("@")[0]: name = existing_account.get("name", name)
-    const defaultName = info.email.split('@')[0];
-    if (!info.name || info.name === defaultName) {
+    const defaultName = currentAccountInfo.email.split('@')[0];
+    if (!currentAccountInfo.name || currentAccountInfo.name === defaultName) {
       // NOTE Keep the existing custom name
       // (account.name is already set, no change needed)
     } else {
       // NOTE We have a non-default name from DB, use it
-      account.name = info.name;
+      account.name = currentAccountInfo.name;
     }
 
     account.last_used = now;
@@ -171,16 +179,16 @@ export async function addAccountSnapshot(): Promise<Account> {
     // NOTE Use existing backup path if available, otherwise generate new one
     backupPath = account.backup_file || path.join(getBackupsDir(), `${account.id}.json`);
 
-    logger.info(`Updating existing account: ${info.email}`);
+    logger.info(`Updating existing account: ${currentAccountInfo.email}`);
   } else {
     const accountId = uuidv4();
 
     // NOTE Generate name with edge case handling
     let accountName: string;
-    if (info.name) {
-      accountName = info.name;
-    } else if (info.email && info.email !== 'Unknown') {
-      accountName = info.email.split('@')[0];
+    if (currentAccountInfo.name) {
+      accountName = currentAccountInfo.name;
+    } else if (currentAccountInfo.email && currentAccountInfo.email !== 'Unknown') {
+      accountName = currentAccountInfo.email.split('@')[0];
     } else {
       // Edge case: email is "Unknown" or invalid
       accountName = `Account_${Date.now()}`;
@@ -191,14 +199,14 @@ export async function addAccountSnapshot(): Promise<Account> {
     account = {
       id: accountId,
       name: accountName,
-      email: info.email,
+      email: currentAccountInfo.email,
       backup_file: backupPath,
       deviceHistory: [],
       created_at: now,
       last_used: now,
     };
     accounts[accountId] = account;
-    logger.info(`Creating new account: ${info.email}`);
+    logger.info(`Creating new account: ${currentAccountInfo.email}`);
   }
 
   // NOTE  Backup data from DB
@@ -223,9 +231,13 @@ export async function addAccountSnapshot(): Promise<Account> {
  * @param accountId {string} The ID of the account to switch to.
  * @throws {Error} If the account cannot be found or the backup file cannot be found.
  */
-export async function switchAccount(accountId: string): Promise<void> {
+export async function switchAccount(
+  accountId: string,
+  appTarget?: AntigravityAppTarget,
+): Promise<void> {
   await runWithSwitchGuard('local-account-switch', async () => {
     logger.info(`Switching to account: ${accountId}`);
+    await refreshAntigravityProcessCache(appTarget);
 
     const accounts = loadAccountsIndex();
     const account = accounts[accountId];
@@ -240,7 +252,7 @@ export async function switchAccount(accountId: string): Promise<void> {
       throw new Error(`Backup file not found: ${backupPath}`);
     }
 
-    ensureGlobalOriginalFromCurrentStorage();
+    ensureGlobalOriginalFromCurrentStorage(appTarget);
     if (!account.deviceProfile) {
       const generated = generateDeviceProfile();
       saveGlobalOriginalProfile(generated);
@@ -249,17 +261,22 @@ export async function switchAccount(accountId: string): Promise<void> {
 
     await executeSwitchFlow({
       scope: 'local',
+      appTarget,
       targetProfile: account.deviceProfile || null,
       applyFingerprint: isIdentityProfileApplyEnabled(),
       processExitTimeoutMs: SWITCH_EXIT_TIMEOUT_MS,
-      edition: ConfigManager.getCachedConfig()?.ideEdition || undefined,
-      performSwitch: async (edition) => {
+      performSwitch: async () => {
         // NOTE Load backup file
         const backupContent = fs.readFileSync(backupPath, 'utf-8');
         const backupData: AccountBackupData = JSON.parse(backupContent);
 
-        // NOTE Restore data to DB
-        dbRestore(backupData, edition);
+        if (CloudAccountRepo.shouldInjectTokenIntoCredentialStore(appTarget)) {
+          const token = extractCredentialStoreTokenFromBackup(backupData);
+          writeAntigravityCredentialStoreToken(token);
+        } else {
+          // NOTE Restore data to DB
+          dbRestore(backupData, appTarget);
+        }
 
         // NOTE Update last used
         account.last_used = new Date().toISOString();

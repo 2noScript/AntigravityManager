@@ -17,6 +17,7 @@ import {
 import { CloudAccountCard, CompactCloudAccountCard } from '@/components/CloudAccountCard';
 import { IdentityProfileDialog } from '@/components/IdentityProfileDialog';
 import { CloudAccount } from '@/types/cloudAccount';
+import type { AntigravityAppTarget } from '@/types/account';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import {
@@ -334,9 +335,9 @@ export function CloudAccountList() {
     );
   };
 
-  const handleSwitch = (id: string) => {
+  const handleSwitch = (id: string, appTarget?: AntigravityAppTarget) => {
     switchMutation.mutate(
-      { accountId: id },
+      { accountId: id, appTarget },
       {
         onSuccess: () =>
           toast({
@@ -764,11 +765,11 @@ export function CloudAccountList() {
           variant="outline"
           onClick={handleSyncLocal}
           disabled={syncMutation.isPending}
-          title={t('cloud.syncFromIDE')}
+          title={t('cloud.syncFromIde')}
           className="cursor-pointer"
         >
           <Download className={`mr-2 h-4 w-4 ${syncMutation.isPending ? 'animate-bounce' : ''}`} />
-          {t('cloud.syncFromIDE')}
+          {t('cloud.syncFromIde')}
         </Button>
 
         <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>

@@ -1,5 +1,5 @@
 import { ipc } from '@/ipc/manager';
-import type { DeviceProfile } from '@/types/account';
+import type { AntigravityAppTarget, DeviceProfile } from '@/types/account';
 
 export function listAccounts() {
   return ipc.client.account.listAccounts();
@@ -9,8 +9,8 @@ export function addAccountSnapshot() {
   return ipc.client.account.addAccountSnapshot();
 }
 
-export function switchAccount(accountId: string) {
-  return ipc.client.account.switchAccount({ accountId });
+export function switchAccount(accountId: string, appTarget?: AntigravityAppTarget) {
+  return ipc.client.account.switchAccount({ accountId, appTarget });
 }
 
 export function deleteAccount(accountId: string) {
