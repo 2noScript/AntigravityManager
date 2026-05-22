@@ -3,7 +3,7 @@ import { theme } from './theme';
 import { window } from './window';
 import { databaseRouter } from './database/router';
 import { accountRouter } from './account/router';
-import { cloudRouter } from './cloud/router';
+import { cloudRouter } from '@/modules/cloud-account/ipc/router';
 import { configRouter } from './config/router';
 import { gatewayRouter } from './gateway/router';
 

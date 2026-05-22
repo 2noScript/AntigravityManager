@@ -1,6 +1,6 @@
 import { Entry } from '@napi-rs/keyring';
 import { execFileSync, spawnSync } from 'child_process';
-import { logger } from '../../utils/logger';
+import { logger } from '@/utils/logger';
 
 export interface CredentialStoreTokenInput {
   access_token: string;

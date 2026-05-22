@@ -13,10 +13,13 @@ import {
   startAuthFlow,
   useExportCloudAccounts,
   useImportCloudAccounts,
-} from '@/hooks/useCloudAccounts';
-import { CloudAccountCard, CompactCloudAccountCard } from '@/components/CloudAccountCard';
+} from '@/modules/cloud-account/hooks/useCloudAccounts';
+import {
+  CloudAccountCard,
+  CompactCloudAccountCard,
+} from '@/modules/cloud-account/components/CloudAccountCard';
 import { IdentityProfileDialog } from '@/components/IdentityProfileDialog';
-import { CloudAccount } from '@/types/cloudAccount';
+import { CloudAccount } from '@/modules/cloud-account/types';
 import type { AntigravityAppTarget } from '@/types/account';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -80,7 +83,7 @@ import {
   roundQuotaPercentage,
   getAccountSortValue,
   type QuotaStatus,
-} from '@/utils/quota-display';
+} from '@/modules/cloud-account/utils/quota-display';
 import { shouldAutoSubmitGoogleAuthCode } from '@/utils/googleAuthSubmission';
 
 export type GridLayout = 'auto' | '2-col' | '3-col' | 'list' | 'compact';

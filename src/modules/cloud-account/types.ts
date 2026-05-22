@@ -4,7 +4,7 @@ import {
   DeviceProfileVersionSchema,
   type DeviceProfile,
   type DeviceProfileVersion,
-} from './account';
+} from '@/types/account';
 
 export interface CloudTokenData {
   access_token: string;

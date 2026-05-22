@@ -1,8 +1,8 @@
 import { z } from 'zod';
-import { ConfigManager } from '../ipc/config/manager';
-import { AuthServer } from '../ipc/cloud/authServer';
+import { ConfigManager } from '@/ipc/config/manager';
+import { AuthServer } from '@/modules/cloud-account/ipc/authServer';
 import { EnvHttpProxyAgent, ProxyAgent } from 'undici';
-import { logger } from '../utils/logger';
+import { logger } from '@/utils/logger';
 import {
   buildUserAgent,
   FALLBACK_VERSION,

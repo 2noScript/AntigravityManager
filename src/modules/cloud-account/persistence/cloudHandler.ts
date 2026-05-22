@@ -5,34 +5,34 @@ import { v4 as uuidv4 } from 'uuid';
 import { desc, eq } from 'drizzle-orm';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import { isNumber, isObjectLike, isPlainObject, isString } from 'lodash-es';
-import { getCloudAccountsDbPath, getAntigravityDbPaths } from '../../utils/paths';
-import { logger } from '../../utils/logger';
+import { getCloudAccountsDbPath, getAntigravityDbPaths } from '@/utils/paths';
+import { logger } from '@/utils/logger';
 import {
   CloudAccount,
   CloudAccountSchema,
   CloudQuotaDataSchema,
   CloudTokenDataSchema,
-} from '../../types/cloudAccount';
+} from '@/modules/cloud-account/types';
 import {
   type AntigravityAppTarget,
   type DeviceProfile,
   type DeviceProfileVersion,
   resolveAntigravityAppTarget,
-} from '../../types/account';
-import { ItemTableValueRowSchema, TableInfoRowSchema } from '../../types/db';
-import { decryptWithMigration, encrypt, type KeySource } from '../../utils/security';
-import { ProtobufUtils } from '../../utils/protobuf';
-import { GoogleAPIService } from '../../services/GoogleAPIService';
+} from '@/types/account';
+import { ItemTableValueRowSchema, TableInfoRowSchema } from '@/types/db';
+import { decryptWithMigration, encrypt, type KeySource } from '@/utils/security';
+import { ProtobufUtils } from '@/utils/protobuf';
+import { GoogleAPIService } from '@/modules/cloud-account/services/GoogleAPIService';
 import {
   getAntigravityVersion,
   isCredentialStoreVersion,
   isNewVersion,
-} from '../../utils/antigravityVersion';
-import { parseRow, parseRows } from '../../utils/sqlite';
-import { configureDatabase, openDrizzleConnection } from './dbConnection';
+} from '@/utils/antigravityVersion';
+import { parseRow, parseRows } from '@/utils/sqlite';
+import { configureDatabase, openDrizzleConnection } from '@/ipc/database/dbConnection';
 import { writeAntigravityCredentialStoreToken } from './antigravityCredentialStore';
-import { accounts, itemTable, settings } from './schema';
-import * as drizzleSchema from './schema';
+import { accounts, itemTable, settings } from '@/ipc/database/schema';
+import * as drizzleSchema from '@/ipc/database/schema';
 
 const SQLITE_BUSY_CODES = new Set(['SQLITE_BUSY', 'SQLITE_LOCKED']);
 const SQLITE_BUSY_TIMEOUT_MS = 3000;

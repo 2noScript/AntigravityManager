@@ -1,8 +1,8 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { isEmpty, isNumber, isString } from 'lodash-es';
-import { CloudAccountRepo } from '../../../ipc/database/cloudHandler';
-import { CloudAccount, CloudQuotaData } from '../../../types/cloudAccount';
-import { GoogleAPIService } from '../../../services/GoogleAPIService';
+import { CloudAccountRepo } from '@/modules/cloud-account/persistence/cloudHandler';
+import { CloudAccount, CloudQuotaData } from '@/modules/cloud-account/types';
+import { GoogleAPIService } from '@/modules/cloud-account/services/GoogleAPIService';
 import { getServerConfig } from '../../server-config';
 import { RateLimitReason, RateLimitTracker } from './rate-limit-tracker';
 import { updateDynamicForwardingRules } from '../../../lib/antigravity/ModelMapping';

@@ -1,15 +1,15 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { CloudMonitorService } from '../../services/CloudMonitorService';
-import { CloudAccountRepo } from '../../ipc/database/cloudHandler';
-import { GoogleAPIService } from '../../services/GoogleAPIService';
-import { AutoSwitchService } from '../../services/AutoSwitchService';
+import { CloudMonitorService } from '@/modules/cloud-account/services/CloudMonitorService';
+import { CloudAccountRepo } from '@/modules/cloud-account/persistence/cloudHandler';
+import { GoogleAPIService } from '@/modules/cloud-account/services/GoogleAPIService';
+import { AutoSwitchService } from '@/modules/cloud-account/services/AutoSwitchService';
 import { TokenManagerService } from '../../server/modules/proxy/token-manager.service';
 import { logger } from '../../utils/logger';
 
 // Mock dependencies
-vi.mock('../../ipc/database/cloudHandler');
-vi.mock('../../services/GoogleAPIService');
-vi.mock('../../services/AutoSwitchService');
+vi.mock('@/modules/cloud-account/persistence/cloudHandler');
+vi.mock('@/modules/cloud-account/services/GoogleAPIService');
+vi.mock('@/modules/cloud-account/services/AutoSwitchService');
 vi.mock('../../utils/logger');
 
 describe('CloudMonitorService', () => {

@@ -6,8 +6,8 @@ import {
   deleteAccount,
 } from '../../ipc/account/handler';
 import { restoreAccount } from '../../ipc/database/handler';
-import { CloudAccountRepo } from '../../ipc/database/cloudHandler';
-import { writeAntigravityCredentialStoreToken } from '../../ipc/database/antigravityCredentialStore';
+import { CloudAccountRepo } from '@/modules/cloud-account/persistence/cloudHandler';
+import { writeAntigravityCredentialStoreToken } from '@/modules/cloud-account/persistence/antigravityCredentialStore';
 import { startAntigravity } from '../../ipc/process/handler';
 import fs from 'fs';
 import path from 'path';
@@ -44,13 +44,13 @@ vi.mock('../../ipc/database/handler', () => ({
   getDatabaseConnection: vi.fn(),
 }));
 
-vi.mock('../../ipc/database/cloudHandler', () => ({
+vi.mock('@/modules/cloud-account/persistence/cloudHandler', () => ({
   CloudAccountRepo: {
     shouldInjectTokenIntoCredentialStore: vi.fn(() => false),
   },
 }));
 
-vi.mock('../../ipc/database/antigravityCredentialStore', () => ({
+vi.mock('@/modules/cloud-account/persistence/antigravityCredentialStore', () => ({
   writeAntigravityCredentialStoreToken: vi.fn(),
 }));
 

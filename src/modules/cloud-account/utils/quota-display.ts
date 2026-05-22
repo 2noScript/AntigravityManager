@@ -1,5 +1,5 @@
 import { differenceInHours, differenceInMinutes, isBefore } from 'date-fns';
-import { CloudAccount } from '@/types/cloudAccount';
+import { CloudAccount } from '@/modules/cloud-account/types';
 
 const HIGH_QUOTA_PERCENTAGE = 80;
 const MEDIUM_QUOTA_PERCENTAGE = 20;

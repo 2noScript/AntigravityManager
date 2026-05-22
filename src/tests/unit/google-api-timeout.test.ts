@@ -111,7 +111,7 @@ describe('GoogleAPIService OAuth clients', () => {
       'custom_a|id-a|secret-a|Custom A;custom_b|id-b|secret-b|Custom B';
     process.env.ANTIGRAVITY_OAUTH_CLIENT_KEY = 'custom_b';
 
-    const { GoogleAPIService } = await import('../../services/GoogleAPIService');
+    const { GoogleAPIService } = await import('@/modules/cloud-account/services/GoogleAPIService');
     const clients = GoogleAPIService.listOAuthClients();
 
     expect(clients.find((client) => client.key === 'antigravity_enterprise')).toBeDefined();
@@ -122,14 +122,14 @@ describe('GoogleAPIService OAuth clients', () => {
   it('switches active oauth client key', async () => {
     process.env.ANTIGRAVITY_OAUTH_CLIENTS = 'custom_a|id-a|secret-a|Custom A';
 
-    const { GoogleAPIService } = await import('../../services/GoogleAPIService');
+    const { GoogleAPIService } = await import('@/modules/cloud-account/services/GoogleAPIService');
     GoogleAPIService.setActiveOAuthClientKey('custom_a');
 
     expect(GoogleAPIService.getActiveOAuthClientKey()).toBe('custom_a');
   });
 
   it('throws when switching to unknown oauth client key', async () => {
-    const { GoogleAPIService } = await import('../../services/GoogleAPIService');
+    const { GoogleAPIService } = await import('@/modules/cloud-account/services/GoogleAPIService');
     expect(() => GoogleAPIService.setActiveOAuthClientKey('missing_client')).toThrow(
       'Unknown OAuth client key',
     );
@@ -166,7 +166,7 @@ describe('GoogleAPIService user info parsing', () => {
       },
     } as any);
 
-    const { GoogleAPIService } = await import('../../services/GoogleAPIService');
+    const { GoogleAPIService } = await import('@/modules/cloud-account/services/GoogleAPIService');
 
     await expect(GoogleAPIService.getUserInfo('access-token')).resolves.toEqual(
       expect.objectContaining({
@@ -247,7 +247,7 @@ describe('GoogleAPIService fetchQuota fallback policy', () => {
       },
     } as any);
 
-    const { GoogleAPIService } = await import('../../services/GoogleAPIService');
+    const { GoogleAPIService } = await import('@/modules/cloud-account/services/GoogleAPIService');
     const { FALLBACK_VERSION, resolveLocalInstalledVersion } =
       await import('../../server/modules/proxy/request-user-agent');
     const expectedVersion = resolveLocalInstalledVersion() ?? FALLBACK_VERSION;
@@ -294,7 +294,7 @@ describe('GoogleAPIService fetchQuota fallback policy', () => {
       },
     } as any);
 
-    const { GoogleAPIService } = await import('../../services/GoogleAPIService');
+    const { GoogleAPIService } = await import('@/modules/cloud-account/services/GoogleAPIService');
     vi.spyOn(GoogleAPIService, 'fetchProjectContext').mockResolvedValue({
       projectId: 'project-1',
       subscriptionTier: 'free',
@@ -339,7 +339,7 @@ describe('GoogleAPIService fetchQuota fallback policy', () => {
       },
     } as any);
 
-    const { GoogleAPIService } = await import('../../services/GoogleAPIService');
+    const { GoogleAPIService } = await import('@/modules/cloud-account/services/GoogleAPIService');
     vi.spyOn(GoogleAPIService, 'fetchProjectContext').mockResolvedValue({
       projectId: 'project-1',
       subscriptionTier: 'free',
@@ -384,7 +384,7 @@ describe('GoogleAPIService fetchQuota fallback policy', () => {
       },
     } as any);
 
-    const { GoogleAPIService } = await import('../../services/GoogleAPIService');
+    const { GoogleAPIService } = await import('@/modules/cloud-account/services/GoogleAPIService');
     vi.spyOn(GoogleAPIService, 'fetchProjectContext').mockResolvedValue({
       projectId: 'project-1',
       subscriptionTier: 'free',
@@ -416,7 +416,7 @@ describe('GoogleAPIService fetchQuota fallback policy', () => {
       },
     } as any);
 
-    const { GoogleAPIService } = await import('../../services/GoogleAPIService');
+    const { GoogleAPIService } = await import('@/modules/cloud-account/services/GoogleAPIService');
 
     await expect(GoogleAPIService.fetchAICredits('access-token')).resolves.toBeNull();
 
@@ -448,7 +448,7 @@ describe('GoogleAPIService fetchQuota fallback policy', () => {
       },
     } as any);
 
-    const { GoogleAPIService } = await import('../../services/GoogleAPIService');
+    const { GoogleAPIService } = await import('@/modules/cloud-account/services/GoogleAPIService');
 
     await expect(GoogleAPIService.fetchAICredits('access-token')).resolves.toBeNull();
 

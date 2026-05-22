@@ -1,10 +1,10 @@
 import { Notification } from 'electron';
-import { CloudAccountRepo } from '../ipc/database/cloudHandler';
+import { CloudAccountRepo } from '@/modules/cloud-account/persistence/cloudHandler';
 import { GoogleAPIService, type TokenResponse } from './GoogleAPIService';
 import { AutoSwitchService } from './AutoSwitchService';
-import { logger } from '../utils/logger';
-import { classifyAccountStatusFromError } from '../utils/account-status';
-import type { CloudAccount } from '../types/cloudAccount';
+import { logger } from '@/utils/logger';
+import { classifyAccountStatusFromError } from '@/utils/account-status';
+import type { CloudAccount } from '@/modules/cloud-account/types';
 
 type CloudMonitorLanguage = 'en' | 'zh-CN' | 'ru' | 'vi';
 

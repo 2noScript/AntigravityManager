@@ -24,17 +24,17 @@ import {
   exportCloudAccounts,
   importCloudAccounts,
 } from './handler';
-import { CloudAccountRepo } from '../database/cloudHandler';
-import { CloudAccountSchema } from '../../types/cloudAccount';
+import { CloudAccountRepo } from '@/modules/cloud-account/persistence/cloudHandler';
+import { CloudAccountSchema } from '@/modules/cloud-account/types';
 import {
   AntigravityAppTargetSchema,
   DeviceProfileSchema,
   DeviceProfilesSnapshotSchema,
-} from '../../types/account';
-import { logger } from '../../utils/logger';
-import { getSwitchMetricsSnapshot } from '../switchMetrics';
-import { getSwitchGuardSnapshot } from '../switchGuard';
-import { getDeviceHardeningSnapshot } from '../device/handler';
+} from '@/types/account';
+import { logger } from '@/utils/logger';
+import { getSwitchMetricsSnapshot } from '@/ipc/switchMetrics';
+import { getSwitchGuardSnapshot } from '@/ipc/switchGuard';
+import { getDeviceHardeningSnapshot } from '@/ipc/device/handler';
 
 const switchOwnerSchema = z.enum(['local-account-switch', 'cloud-account-switch']);
 const switchMetricBucketSchema = z.object({

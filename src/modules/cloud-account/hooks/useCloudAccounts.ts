@@ -8,8 +8,8 @@ import {
   listOAuthClients,
   setActiveOAuthClient,
   type OAuthClientDescriptor,
-} from '@/actions/cloud';
-import { CloudAccount } from '@/types/cloudAccount';
+} from '@/modules/cloud-account/actions/cloud';
+import { CloudAccount } from '@/modules/cloud-account/types';
 
 export const QUERY_KEYS = {
   cloudAccounts: ['cloudAccounts'],
@@ -85,7 +85,7 @@ import {
   getAutoSwitchEnabled,
   setAutoSwitchEnabled,
   forcePollCloudMonitor,
-} from '@/actions/cloud';
+} from '@/modules/cloud-account/actions/cloud';
 
 export function useSwitchCloudAccount() {
   const queryClient = useQueryClient();
@@ -129,7 +129,7 @@ export function useForcePollCloudMonitor() {
   });
 }
 
-import { syncLocalAccount } from '@/actions/cloud';
+import { syncLocalAccount } from '@/modules/cloud-account/actions/cloud';
 
 export function useSyncLocalAccount() {
   const queryClient = useQueryClient();
@@ -141,7 +141,7 @@ export function useSyncLocalAccount() {
   });
 }
 
-import { startAuthFlow } from '@/actions/cloud';
+import { startAuthFlow } from '@/modules/cloud-account/actions/cloud';
 export { startAuthFlow };
 
 export function useSetAccountProxy() {
@@ -157,7 +157,7 @@ export function useSetAccountProxy() {
   });
 }
 
-import { exportCloudAccounts, importCloudAccounts } from '@/actions/cloud';
+import { exportCloudAccounts, importCloudAccounts } from '@/modules/cloud-account/actions/cloud';
 
 export function useExportCloudAccounts() {
   return useMutation<string, Error, { stripTokens?: boolean }>({

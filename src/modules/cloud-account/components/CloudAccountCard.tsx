@@ -1,4 +1,4 @@
-import { CloudAccount, CloudQuotaModelInfo } from '@/types/cloudAccount';
+import { CloudAccount, CloudQuotaModelInfo } from '@/modules/cloud-account/types';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -44,9 +44,9 @@ import {
   formatResetTimeTitle,
   getQuotaStatus,
   type QuotaStatus,
-} from '@/utils/quota-display';
+} from '@/modules/cloud-account/utils/quota-display';
 import { useState } from 'react';
-import { useSetAccountProxy } from '@/hooks/useCloudAccounts';
+import { useSetAccountProxy } from '@/modules/cloud-account/hooks/useCloudAccounts';
 import { isValidProxyUrl } from '@/utils/url';
 import { getValidationBlockedStatusLabel } from '@/components/accountValidationStatus';
 import type { AntigravityAppTarget } from '@/types/account';

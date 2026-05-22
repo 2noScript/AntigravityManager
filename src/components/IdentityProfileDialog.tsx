@@ -10,7 +10,7 @@ import {
   ShieldCheck,
   Cpu,
 } from 'lucide-react';
-import type { CloudAccount } from '@/types/cloudAccount';
+import type { CloudAccount } from '@/modules/cloud-account/types';
 import type { DeviceProfile, DeviceProfilesSnapshot, DeviceProfileVersion } from '@/types/account';
 import {
   bindCloudIdentityProfile,
@@ -21,7 +21,7 @@ import {
   previewGenerateCloudIdentityProfile,
   restoreCloudIdentityProfileRevision,
   restoreCloudBaselineProfile,
-} from '@/actions/cloud';
+} from '@/modules/cloud-account/actions/cloud';
 import {
   Dialog,
   DialogContent,

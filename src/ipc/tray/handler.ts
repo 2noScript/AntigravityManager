@@ -1,10 +1,10 @@
 import { app, Tray, Menu, nativeImage, BrowserWindow } from 'electron';
 import path from 'path';
-import { CloudAccount } from '../../types/cloudAccount';
+import { CloudAccount } from '@/modules/cloud-account/types';
 import { logger } from '../../utils/logger';
 import { getTrayTexts } from './i18n';
-import { CloudAccountRepo } from '../database/cloudHandler';
-import { GoogleAPIService } from '../../services/GoogleAPIService';
+import { CloudAccountRepo } from '@/modules/cloud-account/persistence/cloudHandler';
+import { GoogleAPIService } from '@/modules/cloud-account/services/GoogleAPIService';
 
 let tray: Tray | null = null;
 let globalMainWindow: BrowserWindow | null = null;

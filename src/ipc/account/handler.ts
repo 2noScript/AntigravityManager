@@ -21,8 +21,8 @@ import {
   restoreAccount as dbRestore,
   getCurrentAccountInfo,
 } from '../database/handler';
-import { CloudAccountRepo } from '../database/cloudHandler';
-import { writeAntigravityCredentialStoreToken } from '../database/antigravityCredentialStore';
+import { CloudAccountRepo } from '@/modules/cloud-account/persistence/cloudHandler';
+import { writeAntigravityCredentialStoreToken } from '@/modules/cloud-account/persistence/antigravityCredentialStore';
 import {
   applyDeviceProfile,
   ensureGlobalOriginalFromCurrentStorage,

@@ -4,7 +4,7 @@
  */
 
 import { flatMap, groupBy, keys, map, min, sortBy, sumBy } from 'lodash-es';
-import { roundQuotaPercentage } from '@/utils/quota-display';
+import { roundQuotaPercentage } from '@/modules/cloud-account/utils/quota-display';
 
 export interface ProviderInfo {
   name: string;

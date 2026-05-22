@@ -1,17 +1,17 @@
 import { v4 as uuidv4 } from 'uuid';
-import { CloudAccountRepo } from '../../ipc/database/cloudHandler';
+import { CloudAccountRepo } from '@/modules/cloud-account/persistence/cloudHandler';
 import {
   GoogleAPIService,
   type OAuthClientDescriptor,
   type TokenResponse,
-} from '../../services/GoogleAPIService';
-import { CloudAccount, CloudAccountExportSchema } from '../../types/cloudAccount';
-import { logger } from '../../utils/logger';
+} from '@/modules/cloud-account/services/GoogleAPIService';
+import { CloudAccount, CloudAccountExportSchema } from '@/modules/cloud-account/types';
+import { logger } from '@/utils/logger';
 
 import { shell } from 'electron';
 import fs from 'fs';
 import { isEmpty, isString } from 'lodash-es';
-import { updateTrayMenu } from '../../ipc/tray/handler';
+import { updateTrayMenu } from '@/ipc/tray/handler';
 import {
   ensureGlobalOriginalFromCurrentStorage,
   generateDeviceProfile,
@@ -20,16 +20,12 @@ import {
   loadGlobalOriginalProfile,
   readCurrentDeviceProfile,
   saveGlobalOriginalProfile,
-} from '../../ipc/device/handler';
-import { getAntigravityDbPaths, refreshAntigravityProcessCache } from '../../utils/paths';
-import { runWithSwitchGuard } from '../../ipc/switchGuard';
-import { executeSwitchFlow } from '../../ipc/switchFlow';
-import type {
-  AntigravityAppTarget,
-  DeviceProfile,
-  DeviceProfilesSnapshot,
-} from '../../types/account';
-import { classifyAccountStatusFromError, extractErrorMessage } from '../../utils/account-status';
+} from '@/ipc/device/handler';
+import { getAntigravityDbPaths, refreshAntigravityProcessCache } from '@/utils/paths';
+import { runWithSwitchGuard } from '@/ipc/switchGuard';
+import { executeSwitchFlow } from '@/ipc/switchFlow';
+import type { AntigravityAppTarget, DeviceProfile, DeviceProfilesSnapshot } from '@/types/account';
+import { classifyAccountStatusFromError, extractErrorMessage } from '@/utils/account-status';
 
 // Helper to update tray
 function notifyTrayUpdate(account: CloudAccount) {
@@ -708,7 +704,8 @@ export async function setAutoSwitchEnabled(enabled: boolean): Promise<void> {
   CloudAccountRepo.setSetting('auto_switch_enabled', enabled);
   // Trigger an immediate check if enabled
   if (enabled) {
-    const { CloudMonitorService } = await import('../../services/CloudMonitorService');
+    const { CloudMonitorService } =
+      await import('@/modules/cloud-account/services/CloudMonitorService');
     CloudMonitorService.poll().catch((err: any) =>
       logger.error('Failed to poll after enabling auto-switch', err),
     );
@@ -716,7 +713,8 @@ export async function setAutoSwitchEnabled(enabled: boolean): Promise<void> {
 }
 
 export async function forcePollCloudMonitor(): Promise<void> {
-  const { CloudMonitorService } = await import('../../services/CloudMonitorService');
+  const { CloudMonitorService } =
+    await import('@/modules/cloud-account/services/CloudMonitorService');
   await CloudMonitorService.poll();
 }
 

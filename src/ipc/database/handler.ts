@@ -11,7 +11,7 @@ import { parseRow } from '../../utils/sqlite';
 import { ProtobufUtils } from '../../utils/protobuf';
 import { openDrizzleConnection } from './dbConnection';
 import { itemTable } from './schema';
-import type { CredentialStoreTokenInput } from './antigravityCredentialStore';
+import type { CredentialStoreTokenInput } from '@/modules/cloud-account/persistence/antigravityCredentialStore';
 
 const KEYS_TO_BACKUP: ItemTableKey[] = [
   'antigravityAuthStatus',

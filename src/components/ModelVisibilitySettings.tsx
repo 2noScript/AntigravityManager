@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppConfig } from '@/hooks/useAppConfig';
-import { useCloudAccounts } from '@/hooks/useCloudAccounts';
+import { useCloudAccounts } from '@/modules/cloud-account/hooks/useCloudAccounts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,7 +11,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Loader2, Search, RotateCcw, Save } from 'lucide-react';
 import { filter, flatMap, includes, size, sortBy, sumBy, uniq, values } from 'lodash-es';
-import type { CloudAccount } from '@/types/cloudAccount';
+import type { CloudAccount } from '@/modules/cloud-account/types';
 
 function collectAvailableModelIds(accounts: CloudAccount[] | undefined): string[] {
   if (!accounts) {

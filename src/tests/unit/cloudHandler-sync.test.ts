@@ -1,10 +1,10 @@
 import fs from 'fs';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ProtobufUtils } from '../../utils/protobuf';
-import { CloudAccountRepo } from '../../ipc/database/cloudHandler';
-import { writeAntigravityCredentialStoreToken } from '../../ipc/database/antigravityCredentialStore';
-import type { UserInfo } from '../../services/GoogleAPIService';
-import { toSyncLocalAccountORPCError } from '../../ipc/cloud/router';
+import { CloudAccountRepo } from '@/modules/cloud-account/persistence/cloudHandler';
+import { writeAntigravityCredentialStoreToken } from '@/modules/cloud-account/persistence/antigravityCredentialStore';
+import type { UserInfo } from '@/modules/cloud-account/services/GoogleAPIService';
+import { toSyncLocalAccountORPCError } from '@/modules/cloud-account/ipc/router';
 
 let mockData: Record<string, string>;
 let busyOnFirstGet = false;
@@ -73,13 +73,13 @@ vi.mock('../../utils/logger', () => ({
   },
 }));
 
-vi.mock('../../services/GoogleAPIService', () => ({
+vi.mock('@/modules/cloud-account/services/GoogleAPIService', () => ({
   GoogleAPIService: {
     getUserInfo: vi.fn(),
   },
 }));
 
-vi.mock('../../ipc/database/antigravityCredentialStore', () => ({
+vi.mock('@/modules/cloud-account/persistence/antigravityCredentialStore', () => ({
   writeAntigravityCredentialStoreToken: vi.fn(),
 }));
 
@@ -167,7 +167,7 @@ describe('CloudAccountRepo.syncFromIde', () => {
     mockData['antigravityUnifiedStateSync.oauthToken'] = unifiedB64;
     mockData['jetskiStateSync.agentManagerInitState'] = oldB64;
 
-    const { GoogleAPIService } = await import('../../services/GoogleAPIService');
+    const { GoogleAPIService } = await import('@/modules/cloud-account/services/GoogleAPIService');
     vi.mocked(GoogleAPIService.getUserInfo).mockResolvedValue(
       createMockUserInfo('new@example.com', 'New User'),
     );
@@ -196,7 +196,7 @@ describe('CloudAccountRepo.syncFromIde', () => {
     mockData['antigravityUnifiedStateSync.oauthToken'] = unifiedB64;
     mockData['antigravityUnifiedStateSync.enterprisePreferences'] = enterprisePreferenceB64;
 
-    const { GoogleAPIService } = await import('../../services/GoogleAPIService');
+    const { GoogleAPIService } = await import('@/modules/cloud-account/services/GoogleAPIService');
     vi.mocked(GoogleAPIService.getUserInfo).mockResolvedValue(
       createMockUserInfo('enterprise@example.com', 'Enterprise User'),
     );
@@ -220,7 +220,7 @@ describe('CloudAccountRepo.syncFromIde', () => {
 
     mockData['jetskiStateSync.agentManagerInitState'] = oldB64;
 
-    const { GoogleAPIService } = await import('../../services/GoogleAPIService');
+    const { GoogleAPIService } = await import('@/modules/cloud-account/services/GoogleAPIService');
     vi.mocked(GoogleAPIService.getUserInfo).mockResolvedValue(
       createMockUserInfo('old@example.com', 'Old User'),
     );
@@ -243,7 +243,7 @@ describe('CloudAccountRepo.syncFromIde', () => {
 
     mockData['jetskiStateSync.agentManagerInitState'] = oldB64;
 
-    const { GoogleAPIService } = await import('../../services/GoogleAPIService');
+    const { GoogleAPIService } = await import('@/modules/cloud-account/services/GoogleAPIService');
     vi.mocked(GoogleAPIService.getUserInfo).mockResolvedValue(
       createMockUserInfo('existing@example.com', 'Existing User'),
     );
@@ -319,7 +319,7 @@ describe('CloudAccountRepo.syncFromIde', () => {
     mockData['antigravityUnifiedStateSync.oauthToken'] = unifiedB64;
     mockData['antigravityUnifiedStateSync.enterprisePreferences'] = enterprisePreferenceB64;
 
-    const { GoogleAPIService } = await import('../../services/GoogleAPIService');
+    const { GoogleAPIService } = await import('@/modules/cloud-account/services/GoogleAPIService');
     vi.mocked(GoogleAPIService.getUserInfo).mockResolvedValue(
       createMockUserInfo('existing@example.com', 'Existing User'),
     );
@@ -374,7 +374,7 @@ describe('CloudAccountRepo.syncFromIde', () => {
 
     mockData['jetskiStateSync.agentManagerInitState'] = oldB64;
 
-    const { GoogleAPIService } = await import('../../services/GoogleAPIService');
+    const { GoogleAPIService } = await import('@/modules/cloud-account/services/GoogleAPIService');
     vi.mocked(GoogleAPIService.getUserInfo).mockResolvedValue(
       createMockUserInfo('existing@example.com', 'Existing User'),
     );
@@ -429,7 +429,7 @@ describe('CloudAccountRepo.syncFromIde', () => {
 
     mockData['jetskiStateSync.agentManagerInitState'] = oldB64;
 
-    const { GoogleAPIService } = await import('../../services/GoogleAPIService');
+    const { GoogleAPIService } = await import('@/modules/cloud-account/services/GoogleAPIService');
     vi.mocked(GoogleAPIService.getUserInfo).mockResolvedValue(
       createMockUserInfo('retry@example.com', 'Retry User'),
     );
@@ -453,7 +453,8 @@ describe('CloudAccountRepo.syncFromIde', () => {
       isNewVersion: () => false,
     }));
 
-    const { CloudAccountRepo: RepoWithMock } = await import('../../ipc/database/cloudHandler');
+    const { CloudAccountRepo: RepoWithMock } =
+      await import('@/modules/cloud-account/persistence/cloudHandler');
     const accessToken = 'access-new';
     const refreshToken = 'refresh-new';
 
@@ -619,7 +620,7 @@ describe('cloud switch fail-fast path', () => {
       },
     };
 
-    vi.doMock('../../ipc/database/cloudHandler', () => ({
+    vi.doMock('@/modules/cloud-account/persistence/cloudHandler', () => ({
       CloudAccountRepo: {
         getAccount: vi.fn(async () => account),
         setDeviceBinding: vi.fn(),
@@ -676,7 +677,7 @@ describe('cloud switch fail-fast path', () => {
       },
     }));
 
-    vi.doMock('../../services/GoogleAPIService', () => ({
+    vi.doMock('@/modules/cloud-account/services/GoogleAPIService', () => ({
       GoogleAPIService: {
         refreshAccessToken: refreshAccessTokenMock,
         normalizeRefreshedOAuthClientKey: vi.fn(
@@ -691,7 +692,7 @@ describe('cloud switch fail-fast path', () => {
       },
     }));
 
-    const { switchCloudAccount } = await import('../../ipc/cloud/handler');
+    const { switchCloudAccount } = await import('@/modules/cloud-account/ipc/handler');
     await expect(switchCloudAccount('acc-1')).rejects.toThrow('Switch failed: inject_failed');
 
     expect(refreshAccessTokenMock).toHaveBeenCalledWith('refresh', undefined, undefined);
@@ -741,7 +742,7 @@ describe('cloud oauth client key backfill', () => {
       },
     ];
 
-    vi.doMock('../../ipc/database/cloudHandler', () => ({
+    vi.doMock('@/modules/cloud-account/persistence/cloudHandler', () => ({
       CloudAccountRepo: {
         getAccounts: vi.fn(async () => accounts),
         updateToken: updateTokenMock,
@@ -760,7 +761,7 @@ describe('cloud oauth client key backfill', () => {
 
     const setActiveOAuthClientKeyMock = vi.fn();
     const getActiveOAuthClientKeyMock = vi.fn(() => 'custom_a');
-    vi.doMock('../../services/GoogleAPIService', () => ({
+    vi.doMock('@/modules/cloud-account/services/GoogleAPIService', () => ({
       GoogleAPIService: {
         setActiveOAuthClientKey: setActiveOAuthClientKeyMock,
         getActiveOAuthClientKey: getActiveOAuthClientKeyMock,
@@ -795,7 +796,7 @@ describe('cloud oauth client key backfill', () => {
     vi.doMock('../../ipc/switchFlow', () => ({ executeSwitchFlow: vi.fn() }));
     vi.doMock('electron', () => ({ shell: { openExternal: vi.fn() } }));
 
-    const { listCloudAccounts } = await import('../../ipc/cloud/handler');
+    const { listCloudAccounts } = await import('@/modules/cloud-account/ipc/handler');
     await listCloudAccounts();
 
     expect(setActiveOAuthClientKeyMock).toHaveBeenCalledWith('custom_a');
@@ -829,7 +830,7 @@ describe('cloud oauth client key backfill', () => {
       },
     ];
 
-    vi.doMock('../../ipc/database/cloudHandler', () => ({
+    vi.doMock('@/modules/cloud-account/persistence/cloudHandler', () => ({
       CloudAccountRepo: {
         getAccounts: vi.fn(async () => accounts),
         updateToken: updateTokenMock,
@@ -846,7 +847,7 @@ describe('cloud oauth client key backfill', () => {
       },
     }));
 
-    vi.doMock('../../services/GoogleAPIService', () => ({
+    vi.doMock('@/modules/cloud-account/services/GoogleAPIService', () => ({
       GoogleAPIService: {
         setActiveOAuthClientKey: vi.fn(),
         getActiveOAuthClientKey: vi.fn(() => 'antigravity_enterprise'),
@@ -881,7 +882,7 @@ describe('cloud oauth client key backfill', () => {
     vi.doMock('../../ipc/switchFlow', () => ({ executeSwitchFlow: vi.fn() }));
     vi.doMock('electron', () => ({ shell: { openExternal: vi.fn() } }));
 
-    const { listCloudAccounts } = await import('../../ipc/cloud/handler');
+    const { listCloudAccounts } = await import('@/modules/cloud-account/ipc/handler');
     await listCloudAccounts();
 
     expect(updateTokenMock).not.toHaveBeenCalled();

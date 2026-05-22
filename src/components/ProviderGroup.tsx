@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 
 import type { ProviderStats } from '@/utils/provider-grouping';
-import { clampQuotaPercentage } from '@/utils/quota-display';
+import { clampQuotaPercentage } from '@/modules/cloud-account/utils/quota-display';
 
 interface ProviderGroupProps {
   stats: ProviderStats;

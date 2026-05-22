@@ -17,12 +17,12 @@ import {
   isRunningFromExpectedInstallDir as isRunningFromExpectedInstallDirUtil,
   resolveInstallNoticeLanguage,
 } from './utils/installNotice';
-import { CloudAccountRepo } from './ipc/database/cloudHandler';
+import { CloudAccountRepo } from '@/modules/cloud-account/persistence/cloudHandler';
 import { initDatabase } from './ipc/database/handler';
-import { CloudMonitorService } from './services/CloudMonitorService';
+import { CloudMonitorService } from '@/modules/cloud-account/services/CloudMonitorService';
 
 // Static Imports to fix Bundle Resolution Errors
-import { AuthServer } from './ipc/cloud/authServer';
+import { AuthServer } from '@/modules/cloud-account/ipc/authServer';
 import { bootstrapNestServer, stopNestServer } from './server/main';
 import { initTray, setTrayLanguage, destroyTray } from './ipc/tray/handler';
 import { rpcHandler } from './ipc/handler';

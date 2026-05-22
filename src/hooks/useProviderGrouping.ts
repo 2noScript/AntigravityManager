@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
 
 import { useAppConfig } from '@/hooks/useAppConfig';
-import { CloudAccount } from '@/types/cloudAccount';
+import { CloudAccount } from '@/modules/cloud-account/types';
 import { groupModelsByProvider, type AccountStats } from '@/utils/provider-grouping';
 
 export interface UseProviderGroupingResult {

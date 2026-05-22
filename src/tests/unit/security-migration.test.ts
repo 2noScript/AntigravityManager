@@ -178,7 +178,7 @@ describe('writeAntigravityCredentialStoreToken', () => {
     setPlatform('darwin');
 
     const { writeAntigravityCredentialStoreToken } =
-      await import('../../ipc/database/antigravityCredentialStore');
+      await import('@/modules/cloud-account/persistence/antigravityCredentialStore');
 
     writeAntigravityCredentialStoreToken(token);
 
@@ -194,7 +194,7 @@ describe('writeAntigravityCredentialStoreToken', () => {
     setPlatform('linux');
 
     const { writeAntigravityCredentialStoreToken } =
-      await import('../../ipc/database/antigravityCredentialStore');
+      await import('@/modules/cloud-account/persistence/antigravityCredentialStore');
 
     writeAntigravityCredentialStoreToken(token);
 
@@ -207,7 +207,7 @@ describe('writeAntigravityCredentialStoreToken', () => {
     setPlatform('win32');
 
     const { writeAntigravityCredentialStoreToken } =
-      await import('../../ipc/database/antigravityCredentialStore');
+      await import('@/modules/cloud-account/persistence/antigravityCredentialStore');
 
     writeAntigravityCredentialStoreToken(token);
 
@@ -229,7 +229,7 @@ describe('writeAntigravityCredentialStoreToken', () => {
     setPlatform('win32');
 
     const { writeAntigravityCredentialStoreToken } =
-      await import('../../ipc/database/antigravityCredentialStore');
+      await import('@/modules/cloud-account/persistence/antigravityCredentialStore');
 
     writeAntigravityCredentialStoreToken(token);
 

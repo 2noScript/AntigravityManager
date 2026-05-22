@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { CloudAccountList } from '@/components/CloudAccountList';
+import { CloudAccountList } from '@/modules/cloud-account/components/CloudAccountList';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { getLocalizedErrorMessage } from '@/utils/errorMessages';

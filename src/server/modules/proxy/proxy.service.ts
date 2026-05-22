@@ -38,7 +38,7 @@ import {
   parseRetryDelayMilliseconds,
   shouldGraceRetry,
 } from './rate-limit-tracker';
-import { CloudAccount } from '../../../types/cloudAccount';
+import { CloudAccount } from '@/modules/cloud-account/types';
 
 interface TokenRetryState {
   attemptedAccountIds: Set<string>;
