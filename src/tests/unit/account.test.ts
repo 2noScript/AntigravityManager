@@ -6,6 +6,8 @@ import {
   deleteAccount,
 } from '../../ipc/account/handler';
 import { restoreAccount } from '../../ipc/database/handler';
+import { CloudAccountRepo } from '../../ipc/database/cloudHandler';
+import { writeAntigravityCredentialStoreToken } from '../../ipc/database/antigravityCredentialStore';
 import { startAntigravity } from '../../ipc/process/handler';
 import fs from 'fs';
 import path from 'path';
@@ -22,6 +24,7 @@ vi.mock('../../utils/paths', async () => {
     getBackupsDir: vi.fn(() => path.join(agentDir, 'backups')),
     getAntigravityDbPath: vi.fn(() => path.join(agentDir, 'state.vscdb')),
     getAntigravityExecutablePath: vi.fn(() => 'mock_exec_path'),
+    refreshAntigravityProcessCache: vi.fn(() => Promise.resolve()),
   };
 });
 
@@ -33,7 +36,22 @@ vi.mock('../../ipc/database/handler', () => ({
   })),
   backupAccount: vi.fn((account) => ({ version: '1.0', account, data: {} })),
   restoreAccount: vi.fn(),
+  extractCredentialStoreTokenFromBackup: vi.fn(() => ({
+    access_token: 'access',
+    refresh_token: 'refresh',
+    expiry_timestamp: 1700000000,
+  })),
   getDatabaseConnection: vi.fn(),
+}));
+
+vi.mock('../../ipc/database/cloudHandler', () => ({
+  CloudAccountRepo: {
+    shouldInjectTokenIntoCredentialStore: vi.fn(() => false),
+  },
+}));
+
+vi.mock('../../ipc/database/antigravityCredentialStore', () => ({
+  writeAntigravityCredentialStoreToken: vi.fn(),
 }));
 
 vi.mock('../../ipc/process/handler', () => ({
@@ -96,6 +114,27 @@ describe('Account Handler', () => {
     expect(applyDeviceProfile).toHaveBeenCalled();
   });
 
+  it('should restore account to Antigravity IDE target', async () => {
+    const account = await addAccountSnapshot();
+    await switchAccount(account.id, 'ide');
+    expect(restoreAccount).toHaveBeenCalledWith(expect.any(Object), 'ide');
+    expect(applyDeviceProfile).toHaveBeenCalledWith(expect.any(Object), 'ide');
+  });
+
+  it('should use credential store for Classic when required', async () => {
+    vi.mocked(CloudAccountRepo.shouldInjectTokenIntoCredentialStore).mockReturnValueOnce(true);
+
+    const account = await addAccountSnapshot();
+    await switchAccount(account.id);
+
+    expect(restoreAccount).not.toHaveBeenCalled();
+    expect(writeAntigravityCredentialStoreToken).toHaveBeenCalledWith({
+      access_token: 'access',
+      refresh_token: 'refresh',
+      expiry_timestamp: 1700000000,
+    });
+  });
+
   it('should reuse existing device profile on switch', async () => {
     const account = await addAccountSnapshot();
     const accountFilePath = path.join(testAgentDir, 'accounts.json');
@@ -112,12 +151,15 @@ describe('Account Handler', () => {
     fs.writeFileSync(accountFilePath, JSON.stringify(allAccounts, null, 2), 'utf-8');
 
     await switchAccount(account.id);
-    expect(applyDeviceProfile).toHaveBeenCalledWith({
-      machineId: 'existing-machine',
-      macMachineId: 'existing-mac',
-      devDeviceId: 'existing-dev',
-      sqmId: '{EXISTING-SQM}',
-    });
+    expect(applyDeviceProfile).toHaveBeenCalledWith(
+      {
+        machineId: 'existing-machine',
+        macMachineId: 'existing-mac',
+        devDeviceId: 'existing-dev',
+        sqmId: '{EXISTING-SQM}',
+      },
+      undefined,
+    );
   });
 
   it('should delete account', async () => {
@@ -138,12 +180,15 @@ describe('Account Handler', () => {
     await expect(switchAccount(account.id)).rejects.toThrow('restore_failed');
 
     expect(applyDeviceProfile).toHaveBeenCalledTimes(1);
-    expect(applyDeviceProfile).toHaveBeenCalledWith({
-      machineId: 'auth0|user_test',
-      macMachineId: 'mac-machine-id',
-      devDeviceId: 'dev-device-id',
-      sqmId: '{SQM-ID}',
-    });
+    expect(applyDeviceProfile).toHaveBeenCalledWith(
+      {
+        machineId: 'auth0|user_test',
+        macMachineId: 'mac-machine-id',
+        devDeviceId: 'dev-device-id',
+        sqmId: '{SQM-ID}',
+      },
+      undefined,
+    );
     expect(startAntigravity).not.toHaveBeenCalled();
   });
 

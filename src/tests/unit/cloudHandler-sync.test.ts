@@ -2,6 +2,7 @@ import fs from 'fs';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ProtobufUtils } from '../../utils/protobuf';
 import { CloudAccountRepo } from '../../ipc/database/cloudHandler';
+import { writeAntigravityCredentialStoreToken } from '../../ipc/database/antigravityCredentialStore';
 import type { UserInfo } from '../../services/GoogleAPIService';
 import { toSyncLocalAccountORPCError } from '../../ipc/cloud/router';
 
@@ -60,6 +61,7 @@ vi.mock('../../ipc/database/dbConnection', () => ({
 vi.mock('../../utils/paths', () => ({
   getAntigravityDbPaths: () => ['mock-db'],
   getCloudAccountsDbPath: () => 'mock-cloud-db',
+  refreshAntigravityProcessCache: () => Promise.resolve(),
 }));
 
 vi.mock('../../utils/logger', () => ({
@@ -77,7 +79,11 @@ vi.mock('../../services/GoogleAPIService', () => ({
   },
 }));
 
-describe('CloudAccountRepo.syncFromIDE', () => {
+vi.mock('../../ipc/database/antigravityCredentialStore', () => ({
+  writeAntigravityCredentialStoreToken: vi.fn(),
+}));
+
+describe('CloudAccountRepo.syncFromIde', () => {
   beforeEach(() => {
     mockData = {};
     busyOnFirstGet = false;
@@ -169,7 +175,7 @@ describe('CloudAccountRepo.syncFromIDE', () => {
     vi.spyOn(CloudAccountRepo, 'getAccounts').mockResolvedValue([]);
     vi.spyOn(CloudAccountRepo, 'addAccount').mockResolvedValue();
 
-    const account = await CloudAccountRepo.syncFromIDE();
+    const account = await CloudAccountRepo.syncFromIde();
 
     expect(GoogleAPIService.getUserInfo).toHaveBeenCalledWith(accessToken);
     expect(account?.email).toBe('new@example.com');
@@ -198,7 +204,7 @@ describe('CloudAccountRepo.syncFromIDE', () => {
     vi.spyOn(CloudAccountRepo, 'getAccounts').mockResolvedValue([]);
     vi.spyOn(CloudAccountRepo, 'addAccount').mockResolvedValue();
 
-    const account = await CloudAccountRepo.syncFromIDE();
+    const account = await CloudAccountRepo.syncFromIde();
 
     expect(GoogleAPIService.getUserInfo).toHaveBeenCalledWith(accessToken);
     expect(account?.email).toBe('enterprise@example.com');
@@ -222,7 +228,7 @@ describe('CloudAccountRepo.syncFromIDE', () => {
     vi.spyOn(CloudAccountRepo, 'getAccounts').mockResolvedValue([]);
     vi.spyOn(CloudAccountRepo, 'addAccount').mockResolvedValue();
 
-    const account = await CloudAccountRepo.syncFromIDE();
+    const account = await CloudAccountRepo.syncFromIde();
 
     expect(GoogleAPIService.getUserInfo).toHaveBeenCalledWith(accessToken);
     expect(account?.email).toBe('old@example.com');
@@ -273,7 +279,7 @@ describe('CloudAccountRepo.syncFromIDE', () => {
     vi.spyOn(CloudAccountRepo, 'getAccounts').mockResolvedValue([existingAccount]);
     const addAccountSpy = vi.spyOn(CloudAccountRepo, 'addAccount').mockResolvedValue();
 
-    const account = await CloudAccountRepo.syncFromIDE();
+    const account = await CloudAccountRepo.syncFromIde();
 
     expect(account?.id).toBe('existing-id');
     expect(account?.token.project_id).toBe('project-keep');
@@ -347,7 +353,7 @@ describe('CloudAccountRepo.syncFromIDE', () => {
     vi.spyOn(CloudAccountRepo, 'getAccounts').mockResolvedValue([existingAccount]);
     const addAccountSpy = vi.spyOn(CloudAccountRepo, 'addAccount').mockResolvedValue();
 
-    const account = await CloudAccountRepo.syncFromIDE();
+    const account = await CloudAccountRepo.syncFromIde();
 
     expect(account?.token.project_id).toBe('enterprise-project-recovered');
     expect(addAccountSpy).toHaveBeenCalledWith(
@@ -401,7 +407,7 @@ describe('CloudAccountRepo.syncFromIDE', () => {
     vi.spyOn(CloudAccountRepo, 'getAccounts').mockResolvedValue([existingAccount]);
     const addAccountSpy = vi.spyOn(CloudAccountRepo, 'addAccount').mockResolvedValue();
 
-    const account = await CloudAccountRepo.syncFromIDE();
+    const account = await CloudAccountRepo.syncFromIde();
 
     expect(account?.status).toBe('active');
     expect(account?.status_reason).toBeUndefined();
@@ -431,7 +437,7 @@ describe('CloudAccountRepo.syncFromIDE', () => {
     vi.spyOn(CloudAccountRepo, 'getAccounts').mockResolvedValue([]);
     vi.spyOn(CloudAccountRepo, 'addAccount').mockResolvedValue();
 
-    const account = await CloudAccountRepo.syncFromIDE();
+    const account = await CloudAccountRepo.syncFromIde();
 
     expect(GoogleAPIService.getUserInfo).toHaveBeenCalledWith(accessToken);
     expect(account?.email).toBe('retry@example.com');
@@ -443,6 +449,7 @@ describe('CloudAccountRepo.syncFromIDE', () => {
       getAntigravityVersion: () => {
         throw new Error('version detection failed');
       },
+      isCredentialStoreVersion: () => false,
       isNewVersion: () => false,
     }));
 
@@ -489,6 +496,68 @@ describe('CloudAccountRepo.syncFromIDE', () => {
 
     expect(wroteUnifiedKey).toBe(true);
     expect(updatedOldKey).toBe(true);
+  });
+
+  it('should route Classic Antigravity 2.0+ token injection to credential store', () => {
+    const shouldInjectTokenIntoCredentialStoreSpy = vi
+      .spyOn(CloudAccountRepo, 'shouldInjectTokenIntoCredentialStore')
+      .mockReturnValueOnce(true);
+    const injectCloudTokenSpy = vi.spyOn(CloudAccountRepo, 'injectCloudToken');
+
+    const account = {
+      id: 'id',
+      provider: 'google' as const,
+      email: 'test@example.com',
+      name: 'Test',
+      avatar_url: '',
+      token: {
+        access_token: 'access',
+        refresh_token: 'refresh',
+        expires_in: 3600,
+        expiry_timestamp: 1700000000,
+        token_type: 'Bearer',
+        email: 'test@example.com',
+      },
+      created_at: 1700000000,
+      last_used: 1700000000,
+      status: 'active' as const,
+      is_active: true,
+    };
+
+    expect(CloudAccountRepo.injectCloudTokenWithStorageStrategy(account)).toBe('credential-store');
+    expect(shouldInjectTokenIntoCredentialStoreSpy).toHaveBeenCalledWith(undefined);
+    expect(writeAntigravityCredentialStoreToken).toHaveBeenCalledWith(account.token);
+    expect(injectCloudTokenSpy).not.toHaveBeenCalled();
+  });
+
+  it('should route Antigravity IDE token injection to SQLite target', () => {
+    vi.spyOn(CloudAccountRepo, 'shouldInjectTokenIntoCredentialStore').mockReturnValueOnce(false);
+    const injectCloudTokenSpy = vi
+      .spyOn(CloudAccountRepo, 'injectCloudToken')
+      .mockImplementationOnce(() => undefined);
+
+    const account = {
+      id: 'id',
+      provider: 'google' as const,
+      email: 'test@example.com',
+      name: 'Test',
+      avatar_url: '',
+      token: {
+        access_token: 'access',
+        refresh_token: 'refresh',
+        expires_in: 3600,
+        expiry_timestamp: 1700000000,
+        token_type: 'Bearer',
+        email: 'test@example.com',
+      },
+      created_at: 1700000000,
+      last_used: 1700000000,
+      status: 'active' as const,
+      is_active: true,
+    };
+
+    expect(CloudAccountRepo.injectCloudTokenWithStorageStrategy(account, 'ide')).toBe('sqlite');
+    expect(injectCloudTokenSpy).toHaveBeenCalledWith(account, 'ide');
   });
 });
 
@@ -555,7 +624,8 @@ describe('cloud switch fail-fast path', () => {
         getAccount: vi.fn(async () => account),
         setDeviceBinding: vi.fn(),
         updateToken: updateTokenMock,
-        injectCloudToken: vi.fn(() => {
+        shouldInjectTokenIntoCredentialStore: vi.fn(() => false),
+        injectCloudTokenWithStorageStrategy: vi.fn(() => {
           throw new Error('inject_failed');
         }),
         updateLastUsed: vi.fn(),
@@ -594,6 +664,7 @@ describe('cloud switch fail-fast path', () => {
 
     vi.doMock('../../utils/paths', () => ({
       getAntigravityDbPaths: () => [],
+      refreshAntigravityProcessCache: () => Promise.resolve(),
     }));
 
     vi.doMock('../../utils/logger', () => ({
@@ -632,7 +703,7 @@ describe('cloud switch fail-fast path', () => {
       }),
     );
     expect(applyDeviceProfileMock).toHaveBeenCalledTimes(1);
-    expect(applyDeviceProfileMock).toHaveBeenCalledWith(account.device_profile);
+    expect(applyDeviceProfileMock).toHaveBeenCalledWith(account.device_profile, undefined);
     expect(startAntigravityMock).not.toHaveBeenCalled();
     expect(recordSwitchFailureMock).toHaveBeenCalledWith(
       'cloud',
@@ -714,7 +785,10 @@ describe('cloud oauth client key backfill', () => {
       readCurrentDeviceProfile: vi.fn(),
       saveGlobalOriginalProfile: vi.fn(),
     }));
-    vi.doMock('../../utils/paths', () => ({ getAntigravityDbPaths: () => [] }));
+    vi.doMock('../../utils/paths', () => ({
+      getAntigravityDbPaths: () => [],
+      refreshAntigravityProcessCache: () => Promise.resolve(),
+    }));
     vi.doMock('../../ipc/switchGuard', () => ({
       runWithSwitchGuard: async (_owner: string, fn: () => Promise<void>) => fn(),
     }));
@@ -797,7 +871,10 @@ describe('cloud oauth client key backfill', () => {
       readCurrentDeviceProfile: vi.fn(),
       saveGlobalOriginalProfile: vi.fn(),
     }));
-    vi.doMock('../../utils/paths', () => ({ getAntigravityDbPaths: () => [] }));
+    vi.doMock('../../utils/paths', () => ({
+      getAntigravityDbPaths: () => [],
+      refreshAntigravityProcessCache: () => Promise.resolve(),
+    }));
     vi.doMock('../../ipc/switchGuard', () => ({
       runWithSwitchGuard: async (_owner: string, fn: () => Promise<void>) => fn(),
     }));

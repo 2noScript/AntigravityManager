@@ -1,5 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
-import { compareVersion, isNewVersion } from '../../utils/antigravityVersion';
+import {
+  compareVersion,
+  isCredentialStoreVersion,
+  isNewVersion,
+} from '../../utils/antigravityVersion';
 
 describe('antigravityVersion', () => {
   it('should compare versions correctly', () => {
@@ -14,6 +18,18 @@ describe('antigravityVersion', () => {
     expect(isNewVersion({ shortVersion: '1.16.4', bundleVersion: '1.16.4' })).toBe(false);
     expect(isNewVersion({ shortVersion: '1.16.5', bundleVersion: '1.16.5' })).toBe(true);
     expect(isNewVersion({ shortVersion: '1.17.0', bundleVersion: '1.17.0' })).toBe(true);
+  });
+
+  it('should identify credential-store Antigravity versions', () => {
+    expect(isCredentialStoreVersion({ shortVersion: '1.99.9', bundleVersion: '1.99.9' })).toBe(
+      false,
+    );
+    expect(isCredentialStoreVersion({ shortVersion: '2.0.0', bundleVersion: '2.0.0' })).toBe(
+      true,
+    );
+    expect(isCredentialStoreVersion({ shortVersion: '4.2.0', bundleVersion: '4.2.0' })).toBe(
+      true,
+    );
   });
 
   it('should fallback to package.json on windows when version detection fails', async () => {

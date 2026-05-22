@@ -2,11 +2,20 @@ import crypto from 'crypto';
 import fs from 'fs/promises';
 import keytar from 'keytar';
 import { safeStorage } from 'electron';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { decryptWithMigration } from '../../utils/security';
 
 const primaryHex = '11'.repeat(32);
 const fallbackHex = '22'.repeat(32);
+const childProcessMock = vi.hoisted(() => ({
+  execFileSync: vi.fn(),
+  spawnSync: vi.fn(),
+}));
+const keyringMock = vi.hoisted(() => ({
+  deleteCredential: vi.fn(),
+  setSecret: vi.fn(),
+  withTarget: vi.fn(),
+}));
 
 vi.mock('electron', () => ({
   safeStorage: {
@@ -36,9 +45,22 @@ vi.mock('keytar', () => ({
   },
 }));
 
+vi.mock('child_process', () => ({
+  default: childProcessMock,
+  execFileSync: childProcessMock.execFileSync,
+  spawnSync: childProcessMock.spawnSync,
+}));
+
+vi.mock('@napi-rs/keyring', () => ({
+  Entry: {
+    withTarget: keyringMock.withTarget,
+  },
+}));
+
 const fsMock = vi.mocked(fs, { deep: true });
 const keytarMock = vi.mocked(keytar, { deep: true });
 const safeStorageMock = vi.mocked(safeStorage, { deep: true });
+const originalPlatform = process.platform;
 
 function encryptWithKey(key: Buffer, text: string): string {
   const iv = crypto.randomBytes(16);
@@ -71,7 +93,23 @@ beforeEach(() => {
 
   keytarMock.findCredentials.mockResolvedValue([]);
   keytarMock.getPassword.mockResolvedValue(fallbackHex);
+  childProcessMock.execFileSync.mockReset();
+  childProcessMock.spawnSync.mockReset();
+  keyringMock.deleteCredential.mockReset();
+  keyringMock.setSecret.mockReset();
+  keyringMock.withTarget.mockReset();
+  keyringMock.withTarget.mockReturnValue({
+    deleteCredential: keyringMock.deleteCredential,
+    setSecret: keyringMock.setSecret,
+  });
 });
+
+function setPlatform(platformName: NodeJS.Platform): void {
+  Object.defineProperty(process, 'platform', {
+    value: platformName,
+    configurable: true,
+  });
+}
 
 describe('decryptWithMigration', () => {
   it('falls back to legacy key and re-encrypts', async () => {
@@ -118,5 +156,83 @@ describe('decryptWithMigration', () => {
     const ciphertext = encryptWithKey(Buffer.from('33'.repeat(32), 'hex'), plaintext);
 
     await expect(decryptWithMigration(ciphertext)).rejects.toThrow('ERR_DATA_MIGRATION_FAILED');
+  });
+});
+
+describe('writeAntigravityCredentialStoreToken', () => {
+  beforeEach(() => {
+    vi.resetModules();
+  });
+
+  afterEach(() => {
+    setPlatform(originalPlatform);
+  });
+
+  const token = {
+    access_token: 'access-token',
+    refresh_token: 'refresh-token',
+    expiry_timestamp: 1_700_000_000,
+  };
+
+  it('writes go-keyring-base64 payload on macOS', async () => {
+    setPlatform('darwin');
+
+    const { writeAntigravityCredentialStoreToken } =
+      await import('../../ipc/database/antigravityCredentialStore');
+
+    writeAntigravityCredentialStoreToken(token);
+
+    expect(childProcessMock.execFileSync).toHaveBeenLastCalledWith(
+      'security',
+      expect.arrayContaining(['-w', expect.stringMatching(/^go-keyring-base64:/)]),
+      { stdio: 'ignore' },
+    );
+  });
+
+  it('writes raw JSON payload to Linux secret-tool', async () => {
+    childProcessMock.spawnSync.mockReturnValue({ status: 0, stderr: '' });
+    setPlatform('linux');
+
+    const { writeAntigravityCredentialStoreToken } =
+      await import('../../ipc/database/antigravityCredentialStore');
+
+    writeAntigravityCredentialStoreToken(token);
+
+    const options = childProcessMock.spawnSync.mock.calls[0]?.[2] as { input: string };
+    expect(options.input).toContain('"access_token":"access-token"');
+    expect(options.input).not.toContain('go-keyring-base64');
+  });
+
+  it('writes raw JSON payload to Windows gemini:antigravity credential', async () => {
+    setPlatform('win32');
+
+    const { writeAntigravityCredentialStoreToken } =
+      await import('../../ipc/database/antigravityCredentialStore');
+
+    writeAntigravityCredentialStoreToken(token);
+
+    const secret = keyringMock.setSecret.mock.calls[0]?.[0] as Buffer;
+    expect(keyringMock.withTarget).toHaveBeenCalledWith(
+      'gemini:antigravity',
+      'gemini',
+      'antigravity',
+    );
+    expect(keyringMock.deleteCredential).toHaveBeenCalledTimes(1);
+    expect(secret.toString('utf-8')).toContain('"access_token":"access-token"');
+    expect(secret.toString('utf-8')).not.toContain('go-keyring-base64');
+  });
+
+  it('writes Windows credential when no previous credential can be deleted', async () => {
+    keyringMock.deleteCredential.mockImplementationOnce(() => {
+      throw new Error('NoEntry');
+    });
+    setPlatform('win32');
+
+    const { writeAntigravityCredentialStoreToken } =
+      await import('../../ipc/database/antigravityCredentialStore');
+
+    writeAntigravityCredentialStoreToken(token);
+
+    expect(keyringMock.setSecret).toHaveBeenCalledTimes(1);
   });
 });
