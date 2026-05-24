@@ -11,6 +11,15 @@ const vi = {
     checking: 'Đang kiểm tra trạng thái...',
     running: 'Antigravity đang chạy nền',
     stopped: 'Dịch vụ Antigravity đã dừng',
+    services: 'Dịch vụ',
+    dashboard_title: 'Trạng thái dịch vụ',
+    open_dashboard: 'Mở trạng thái dịch vụ',
+    checking_short: 'Đang kiểm tra...',
+    running_short: 'Đang chạy',
+    stopped_short: 'Đã dừng',
+    all_running: 'Tất cả dịch vụ đang chạy',
+    all_stopped: 'Tất cả dịch vụ đã dừng',
+    partial_running: '{{running}}/{{total}} dịch vụ đang chạy',
   },
   action: {
     stop: 'Dừng',
@@ -128,6 +137,10 @@ const vi = {
       antigravity_args: 'Tham số khởi chạy Antigravity',
       antigravity_args_desc: 'Tham số tùy chọn khi khởi chạy Antigravity, ví dụ --user-data-dir.',
       antigravity_args_placeholder: 'Ví dụ: --user-data-dir D:\\AntigravityProfile',
+      antigravity_ide_args: 'Tham số khởi chạy Antigravity IDE',
+      antigravity_ide_args_desc:
+        'Tham số tùy chọn khi khởi chạy Antigravity IDE, ví dụ --user-data-dir.',
+      antigravity_ide_args_placeholder: 'Ví dụ: --user-data-dir D:\\AntigravityIdeProfile',
       detect_antigravity_args: 'Phát hiện',
     },
     startup: {

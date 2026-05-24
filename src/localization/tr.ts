@@ -11,6 +11,15 @@ const tr = {
     checking: 'Durum kontrol ediliyor...',
     running: 'Antigravity arka planda çalışıyor',
     stopped: 'Antigravity hizmeti durduruldu',
+    services: 'Hizmetler',
+    dashboard_title: 'Hizmet durumu',
+    open_dashboard: 'Hizmet durumunu aç',
+    checking_short: 'Kontrol ediliyor...',
+    running_short: 'Çalışıyor',
+    stopped_short: 'Durduruldu',
+    all_running: 'Tüm hizmetler çalışıyor',
+    all_stopped: 'Tüm hizmetler durduruldu',
+    partial_running: '{{running}}/{{total}} hizmet çalışıyor',
   },
   action: {
     stop: 'Durdur',
@@ -129,6 +138,10 @@ const tr = {
       antigravity_args_desc:
         'Antigravity başlatılırken iletilecek isteğe bağlı argümanlar, örneğin --user-data-dir.',
       antigravity_args_placeholder: 'Örnek: --user-data-dir D:\\AntigravityProfile',
+      antigravity_ide_args: 'Antigravity IDE başlatma argümanları',
+      antigravity_ide_args_desc:
+        'Antigravity IDE başlatılırken iletilecek isteğe bağlı argümanlar, örneğin --user-data-dir.',
+      antigravity_ide_args_placeholder: 'Örnek: --user-data-dir D:\\AntigravityIdeProfile',
       detect_antigravity_args: 'Algıla',
     },
     startup: {

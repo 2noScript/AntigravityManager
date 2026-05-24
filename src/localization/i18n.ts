@@ -31,6 +31,15 @@ i18n
             checking: 'Checking status...',
             running: 'Antigravity is running in background',
             stopped: 'Antigravity service stopped',
+            services: 'Services',
+            dashboard_title: 'Service status',
+            open_dashboard: 'Open service status',
+            checking_short: 'Checking...',
+            running_short: 'Running',
+            stopped_short: 'Stopped',
+            all_running: 'All services running',
+            all_stopped: 'All services stopped',
+            partial_running: '{{running}}/{{total}} services running',
           },
           action: {
             stop: 'Stop',
@@ -152,6 +161,11 @@ i18n
               antigravity_args_desc:
                 'Optional arguments passed when launching Antigravity, such as --user-data-dir.',
               antigravity_args_placeholder: 'Example: --user-data-dir D:\\AntigravityProfile',
+              antigravity_ide_args: 'Antigravity IDE launch arguments',
+              antigravity_ide_args_desc:
+                'Optional arguments passed when launching Antigravity IDE, such as --user-data-dir.',
+              antigravity_ide_args_placeholder:
+                'Example: --user-data-dir D:\\AntigravityIdeProfile',
               detect_antigravity_args: 'Detect',
             },
             startup: {
@@ -665,6 +679,10 @@ i18n
               antigravity_args: 'Antigravity 启动参数',
               antigravity_args_desc: '启动 Antigravity 时传入的可选参数，例如 --user-data-dir。',
               antigravity_args_placeholder: '例如：--user-data-dir D:\\AntigravityProfile',
+              antigravity_ide_args: 'Antigravity IDE 启动参数',
+              antigravity_ide_args_desc:
+                '启动 Antigravity IDE 时传入的可选参数，例如 --user-data-dir。',
+              antigravity_ide_args_placeholder: '例如：--user-data-dir D:\\AntigravityIdeProfile',
               detect_antigravity_args: '检测',
             },
             startup: {
@@ -1170,6 +1188,11 @@ i18n
               antigravity_args: 'Аргументы запуска Antigravity',
               antigravity_args_desc: 'Необязательные аргументы запуска, например --user-data-dir.',
               antigravity_args_placeholder: 'Например: --user-data-dir D:\\AntigravityProfile',
+              antigravity_ide_args: 'Аргументы запуска Antigravity IDE',
+              antigravity_ide_args_desc:
+                'Необязательные аргументы запуска Antigravity IDE, например --user-data-dir.',
+              antigravity_ide_args_placeholder:
+                'Например: --user-data-dir D:\\AntigravityIdeProfile',
               detect_antigravity_args: 'Найти',
             },
             startup: {

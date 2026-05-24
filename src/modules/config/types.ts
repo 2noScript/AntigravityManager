@@ -56,6 +56,7 @@ export const AppConfigSchema = z.object({
   antigravity_executable: z.string().nullable().optional().default(null),
   antigravity_ide_executable: z.string().nullable().optional().default(null),
   antigravity_args: z.array(z.string()).optional().default([]),
+  antigravity_ide_args: z.array(z.string()).optional().default([]),
   proxy: ProxyConfigSchema,
 });
 
@@ -84,6 +85,7 @@ export const DEFAULT_APP_CONFIG: AppConfig = {
   antigravity_executable: null,
   antigravity_ide_executable: null,
   antigravity_args: [],
+  antigravity_ide_args: [],
   proxy: {
     enabled: false,
     port: 8045,

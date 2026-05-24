@@ -74,6 +74,7 @@ function SettingsPage() {
   const [antigravityExecutable, setAntigravityExecutable] = useState('');
   const [antigravityIdeExecutable, setAntigravityIdeExecutable] = useState('');
   const [antigravityArgs, setAntigravityArgs] = useState('');
+  const [antigravityIdeArgs, setAntigravityIdeArgs] = useState('');
 
   // Sync config to local state when loaded
   useEffect(() => {
@@ -83,6 +84,7 @@ function SettingsPage() {
       setAntigravityExecutable(config.antigravity_executable || '');
       setAntigravityIdeExecutable(config.antigravity_ide_executable || '');
       setAntigravityArgs((config.antigravity_args || []).join(' '));
+      setAntigravityIdeArgs((config.antigravity_ide_args || []).join(' '));
     }
   }, [config]);
 
@@ -160,13 +162,36 @@ function SettingsPage() {
   };
 
   const handleDetectAntigravityArgs = async () => {
-    const detectedArgs = await getAntigravityArgs();
+    const detectedArgs = await getAntigravityArgs('classic');
     const nextValue = detectedArgs.join(' ');
     setAntigravityArgs(nextValue);
     if (config) {
       await saveConfig({
         ...config,
         antigravity_args: detectedArgs,
+      });
+    }
+  };
+
+  const saveAntigravityIdeArgs = async (value: string) => {
+    const launchArgs = parseArgsInput(value);
+    setAntigravityIdeArgs(launchArgs.join(' '));
+    if (config) {
+      await saveConfig({
+        ...config,
+        antigravity_ide_args: launchArgs,
+      });
+    }
+  };
+
+  const handleDetectAntigravityIdeArgs = async () => {
+    const detectedArgs = await getAntigravityArgs('ide');
+    const nextValue = detectedArgs.join(' ');
+    setAntigravityIdeArgs(nextValue);
+    if (config) {
+      await saveConfig({
+        ...config,
+        antigravity_ide_args: detectedArgs,
       });
     }
   };
@@ -386,6 +411,44 @@ function SettingsPage() {
                       variant="outline"
                       size="icon"
                       onClick={() => saveAntigravityArgs('')}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-2 rounded-lg border p-4">
+                <div className="space-y-1">
+                  <Label htmlFor="antigravity-ide-args">
+                    {t('settings.account.antigravity_ide_args')}
+                  </Label>
+                  <p className="text-xs text-gray-500">
+                    {t('settings.account.antigravity_ide_args_desc')}
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    id="antigravity-ide-args"
+                    value={antigravityIdeArgs}
+                    placeholder={t('settings.account.antigravity_ide_args_placeholder')}
+                    onChange={(event) => setAntigravityIdeArgs(event.target.value)}
+                    onBlur={() => saveAntigravityIdeArgs(antigravityIdeArgs)}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleDetectAntigravityIdeArgs}
+                    className="shrink-0"
+                  >
+                    {t('settings.account.detect_antigravity_args')}
+                  </Button>
+                  {antigravityIdeArgs && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => saveAntigravityIdeArgs('')}
                     >
                       <X className="h-4 w-4" />
                     </Button>
