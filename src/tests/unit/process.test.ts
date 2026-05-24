@@ -21,7 +21,7 @@ vi.mock('find-process', () => ({
 }));
 
 // Mock logger to avoid console output during tests
-vi.mock('../../utils/logger', () => ({
+vi.mock('@/shared/logging/logger', () => ({
   logger: {
     debug: vi.fn(),
     info: vi.fn(),
@@ -31,7 +31,7 @@ vi.mock('../../utils/logger', () => ({
 }));
 
 // Mock paths module to avoid child_process issues
-vi.mock('../../utils/paths', () => ({
+vi.mock('@/shared/platform/paths', () => ({
   getAntigravityExecutablePath: vi.fn(() => '/path/to/antigravity'),
   getConfiguredAntigravityArgs: vi.fn(() => []),
   isConfiguredTargetExecutableProcessCandidate: vi.fn((processItem, target) => {
@@ -78,12 +78,16 @@ vi.mock('../../utils/paths', () => ({
 }));
 
 // Import after mocks are set up
-import { isProcessRunning, closeAntigravity, startAntigravity } from '../../ipc/process/handler';
+import {
+  isProcessRunning,
+  closeAntigravity,
+  startAntigravity,
+} from '@/modules/antigravity-runtime/ipc/handler';
 import findProcess from 'find-process';
 import {
   getAntigravityExecutablePath,
   isTargetAntigravityProcessCandidate,
-} from '../../utils/paths';
+} from '@/shared/platform/paths';
 
 describe('Process Handler', () => {
   const mockFindProcess = findProcess as unknown as ReturnType<typeof vi.fn>;

@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { isEmpty, isString } from 'lodash-es';
 
-import { transformClaudeRequestIn } from '../../lib/antigravity/ClaudeRequestMapper';
-import { ProxyService } from '../../server/modules/proxy/proxy.service';
-import { TokenManagerService } from '../../server/modules/proxy/token-manager.service';
+import { transformClaudeRequestIn } from '../../modules/proxy-gateway/antigravity/ClaudeRequestMapper';
+import { ProxyService } from '../../modules/proxy-gateway/server/proxy.service';
+import { TokenManagerService } from '../../modules/proxy-gateway/server/token-manager.service';
 
 const mockTokenManager: any = {
   getNextToken: async () => null,

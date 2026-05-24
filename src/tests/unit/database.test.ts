@@ -4,7 +4,7 @@ import {
   getCurrentAccountInfo,
   backupAccount,
   restoreAccount,
-} from '../../ipc/database/handler';
+} from '@/shared/persistence/database/handler';
 import Database from 'better-sqlite3';
 import fs from 'fs';
 import path from 'path';
@@ -12,7 +12,7 @@ import path from 'path';
 // Mock paths to use a temp DB
 const tempDbPath = path.join(process.cwd(), 'temp_test.vscdb');
 
-vi.mock('../../utils/paths', async () => {
+vi.mock('../../shared/platform/paths', async () => {
   const path = await import('path');
   const tempDbPath = path.join(process.cwd(), 'temp_test.vscdb');
   return {
@@ -22,7 +22,7 @@ vi.mock('../../utils/paths', async () => {
   };
 });
 
-vi.mock('../../utils/logger', () => ({
+vi.mock('../../shared/logging/logger', () => ({
   logger: {
     info: vi.fn(),
     error: vi.fn(),

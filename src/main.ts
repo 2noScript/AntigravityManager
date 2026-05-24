@@ -8,28 +8,28 @@ import { EnvHttpProxyAgent, setGlobalDispatcher } from 'undici';
 
 import { ipcMain } from 'electron/main';
 import { ipcContext } from '@/ipc/context';
-import { IPC_CHANNELS } from './constants';
+import { IPC_CHANNELS } from './shared/constants';
 import { updateElectronApp, UpdateSourceType } from 'update-electron-app';
-import { logger } from './utils/logger';
+import { logger } from './shared/logging/logger';
 import {
   getExpectedInstallRoot,
   getInstallNoticeText,
   isRunningFromExpectedInstallDir as isRunningFromExpectedInstallDirUtil,
   resolveInstallNoticeLanguage,
-} from './utils/installNotice';
+} from './modules/app-shell/utils/installNotice';
 import { CloudAccountRepo } from '@/modules/cloud-account/persistence/cloudHandler';
-import { initDatabase } from './ipc/database/handler';
+import { initDatabase } from '@/shared/persistence/database/handler';
 import { CloudMonitorService } from '@/modules/cloud-account/services/CloudMonitorService';
 
 // Static Imports to fix Bundle Resolution Errors
 import { AuthServer } from '@/modules/cloud-account/ipc/authServer';
 import { bootstrapNestServer, stopNestServer } from './server/main';
-import { initTray, setTrayLanguage, destroyTray } from './ipc/tray/handler';
+import { initTray, setTrayLanguage, destroyTray } from '@/modules/app-shell/ipc/tray/handler';
 import { rpcHandler } from './ipc/handler';
-import { ConfigManager } from './ipc/config/manager';
-import { AppConfig } from './types/config';
-import { isAutoStartLaunch, syncAutoStart } from './utils/autoStart';
-import { safeStringifyPacket } from './utils/sensitiveDataMasking';
+import { ConfigManager } from '@/modules/config/ipc/manager';
+import { AppConfig } from '@/modules/config/types';
+import { isAutoStartLaunch, syncAutoStart } from '@/modules/antigravity-runtime/utils/autoStart';
+import { safeStringifyPacket } from './shared/security/sensitiveDataMasking';
 
 const packetLogPath = path.join(app.getPath('userData'), 'orpc_packets.log');
 

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { of } from 'rxjs';
 
-import { ProxyController } from '../../server/modules/proxy/proxy.controller';
+import { ProxyController } from '../../modules/proxy-gateway/server/proxy.controller';
 
 function createReplyMock() {
   const reply: Record<string, any> = {};

@@ -2,8 +2,8 @@ import { Notification } from 'electron';
 import { CloudAccountRepo } from '@/modules/cloud-account/persistence/cloudHandler';
 import { GoogleAPIService, type TokenResponse } from './GoogleAPIService';
 import { AutoSwitchService } from './AutoSwitchService';
-import { logger } from '@/utils/logger';
-import { classifyAccountStatusFromError } from '@/utils/account-status';
+import { logger } from '@/shared/logging/logger';
+import { classifyAccountStatusFromError } from '@/modules/cloud-account/utils/account-status';
 import type { CloudAccount } from '@/modules/cloud-account/types';
 
 type CloudMonitorLanguage = 'en' | 'zh-CN' | 'ru' | 'vi';

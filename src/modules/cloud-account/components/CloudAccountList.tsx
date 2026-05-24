@@ -18,9 +18,9 @@ import {
   CloudAccountCard,
   CompactCloudAccountCard,
 } from '@/modules/cloud-account/components/CloudAccountCard';
-import { IdentityProfileDialog } from '@/components/IdentityProfileDialog';
+import { IdentityProfileDialog } from '@/modules/identity-profile/components/IdentityProfileDialog';
 import { CloudAccount } from '@/modules/cloud-account/types';
-import type { AntigravityAppTarget } from '@/types/account';
+import type { AntigravityAppTarget } from '@/modules/account/types';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import {
@@ -65,8 +65,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { getLocalizedErrorMessage } from '@/utils/errorMessages';
-import { useAppConfig } from '@/hooks/useAppConfig';
+import { getLocalizedErrorMessage } from '@/shared/utils/errorMessages';
+import { useAppConfig } from '@/modules/config/hooks/useAppConfig';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   Select,
@@ -84,7 +84,7 @@ import {
   getAccountSortValue,
   type QuotaStatus,
 } from '@/modules/cloud-account/utils/quota-display';
-import { shouldAutoSubmitGoogleAuthCode } from '@/utils/googleAuthSubmission';
+import { shouldAutoSubmitGoogleAuthCode } from '@/modules/cloud-account/utils/googleAuthSubmission';
 
 export type GridLayout = 'auto' | '2-col' | '3-col' | 'list' | 'compact';
 

@@ -1,4 +1,4 @@
-import { IPC_CHANNELS } from '@/constants';
+import { IPC_CHANNELS } from '@/shared/constants';
 import { createORPCClient } from '@orpc/client';
 import { RPCLink } from '@orpc/client/message-port';
 import type { RouterClient } from '@orpc/server';

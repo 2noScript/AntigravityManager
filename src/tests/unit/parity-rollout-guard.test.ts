@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { DEFAULT_APP_CONFIG, ProxyConfig } from '../../types/config';
+import { DEFAULT_APP_CONFIG, ProxyConfig } from '@/modules/config/types';
 import { setServerConfig } from '../../server/server-config';
-import { TokenManagerService } from '../../server/modules/proxy/token-manager.service';
+import { TokenManagerService } from '../../modules/proxy-gateway/server/token-manager.service';
 
 function createProxyConfig(overrides: Partial<ProxyConfig>): ProxyConfig {
   return {

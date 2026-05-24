@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeAll, beforeEach, afterEach, afterAll } 
 import fs from 'fs';
 import path from 'path';
 
-vi.mock('../../utils/paths', async () => {
+vi.mock('../../shared/platform/paths', async () => {
   const path = await import('path');
   return {
     getAgentDir: vi.fn(() => path.join(process.cwd(), 'temp_test_logs')),
@@ -49,7 +49,7 @@ describe('Logger Utilities', () => {
       fs.rmSync(testLogDir, { recursive: true, force: true });
     }
     fs.mkdirSync(testLogDir, { recursive: true });
-    const loggerModule = await import('../../utils/logger');
+    const loggerModule = await import('../../shared/logging/logger');
     logger = loggerModule.logger;
   });
 

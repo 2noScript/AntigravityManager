@@ -3,7 +3,7 @@ import fs from 'fs/promises';
 import keytar from 'keytar';
 import { safeStorage } from 'electron';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { decryptWithMigration } from '../../utils/security';
+import { decryptWithMigration } from '../../shared/security/security';
 
 const primaryHex = '11'.repeat(32);
 const fallbackHex = '22'.repeat(32);

@@ -1,7 +1,7 @@
 import http from 'http';
-import { logger } from '@/utils/logger';
+import { logger } from '@/shared/logging/logger';
 import { ipcContext } from '@/ipc/context';
-import { escapeHtml } from '@/utils/url';
+import { escapeHtml } from '@/shared/utils/url';
 
 export class AuthServer {
   private static server: http.Server | null = null;

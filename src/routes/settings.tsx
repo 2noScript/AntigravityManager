@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { useTheme } from '@/components/theme-provider';
+import { useTheme } from '@/components/shared/theme-provider';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -14,20 +14,20 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useQuery } from '@tanstack/react-query';
-import { getAppVersion, getPlatform } from '@/actions/app';
+import { getAppVersion, getPlatform } from '@/modules/app-shell/actions/app';
 import { useTranslation } from 'react-i18next';
-import { setAppLanguage } from '@/actions/language';
-import { useAppConfig } from '@/hooks/useAppConfig';
+import { setAppLanguage } from '@/modules/app-shell/actions/language';
+import { useAppConfig } from '@/modules/config/hooks/useAppConfig';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2, FolderOpen, X } from 'lucide-react';
-import { ModelVisibilitySettings } from '@/components/ModelVisibilitySettings';
+import { ModelVisibilitySettings } from '@/modules/config/components/ModelVisibilitySettings';
 import { useEffect, useState } from 'react';
-import { ProxyConfig } from '@/types/config';
+import { ProxyConfig } from '@/modules/config/types';
 import {
   getAntigravityArgs,
   openLogDirectory,
   selectAntigravityExecutable,
-} from '@/actions/system';
+} from '@/modules/antigravity-runtime/actions/system';
 
 function parseArgsInput(value: string): string[] {
   const args: string[] = [];

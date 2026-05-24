@@ -1,6 +1,6 @@
 import fs from 'fs';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import * as handler from '../../ipc/database/handler';
+import * as handler from '@/shared/persistence/database/handler';
 
 let writes: Record<string, string> = {};
 interface MockOrm {
@@ -14,18 +14,18 @@ interface MockOrm {
 
 let mockOrm: MockOrm;
 
-vi.mock('../../ipc/database/dbConnection', () => ({
+vi.mock('@/shared/persistence/database/dbConnection', () => ({
   openDrizzleConnection: () => ({
     raw: { close: vi.fn() },
     orm: mockOrm,
   }),
 }));
 
-vi.mock('../../utils/paths', () => ({
+vi.mock('../../shared/platform/paths', () => ({
   getAntigravityDbPaths: () => ['mock-db'],
 }));
 
-vi.mock('../../utils/logger', () => ({
+vi.mock('../../shared/logging/logger', () => ({
   logger: {
     info: vi.fn(),
     warn: vi.fn(),

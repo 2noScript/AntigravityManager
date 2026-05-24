@@ -1,6 +1,6 @@
 import { ipcRenderer, contextBridge } from 'electron';
 import * as Sentry from '@sentry/electron/renderer';
-import { IPC_CHANNELS } from './constants';
+import { IPC_CHANNELS } from './shared/constants';
 
 import path from 'path';
 import fs from 'fs';

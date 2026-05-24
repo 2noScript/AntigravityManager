@@ -3,14 +3,14 @@ import { CloudMonitorService } from '@/modules/cloud-account/services/CloudMonit
 import { CloudAccountRepo } from '@/modules/cloud-account/persistence/cloudHandler';
 import { GoogleAPIService } from '@/modules/cloud-account/services/GoogleAPIService';
 import { AutoSwitchService } from '@/modules/cloud-account/services/AutoSwitchService';
-import { TokenManagerService } from '../../server/modules/proxy/token-manager.service';
-import { logger } from '../../utils/logger';
+import { TokenManagerService } from '../../modules/proxy-gateway/server/token-manager.service';
+import { logger } from '../../shared/logging/logger';
 
 // Mock dependencies
 vi.mock('@/modules/cloud-account/persistence/cloudHandler');
 vi.mock('@/modules/cloud-account/services/GoogleAPIService');
 vi.mock('@/modules/cloud-account/services/AutoSwitchService');
-vi.mock('../../utils/logger');
+vi.mock('../../shared/logging/logger');
 
 describe('CloudMonitorService', () => {
   beforeEach(() => {

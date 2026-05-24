@@ -6,12 +6,12 @@ import {
   type TokenResponse,
 } from '@/modules/cloud-account/services/GoogleAPIService';
 import { CloudAccount, CloudAccountExportSchema } from '@/modules/cloud-account/types';
-import { logger } from '@/utils/logger';
+import { logger } from '@/shared/logging/logger';
 
 import { shell } from 'electron';
 import fs from 'fs';
 import { isEmpty, isString } from 'lodash-es';
-import { updateTrayMenu } from '@/ipc/tray/handler';
+import { updateTrayMenu } from '@/modules/app-shell/ipc/tray/handler';
 import {
   ensureGlobalOriginalFromCurrentStorage,
   generateDeviceProfile,
@@ -20,12 +20,21 @@ import {
   loadGlobalOriginalProfile,
   readCurrentDeviceProfile,
   saveGlobalOriginalProfile,
-} from '@/ipc/device/handler';
-import { getAntigravityDbPaths, refreshAntigravityProcessCache } from '@/utils/paths';
-import { runWithSwitchGuard } from '@/ipc/switchGuard';
-import { executeSwitchFlow } from '@/ipc/switchFlow';
-import type { AntigravityAppTarget, DeviceProfile, DeviceProfilesSnapshot } from '@/types/account';
-import { classifyAccountStatusFromError, extractErrorMessage } from '@/utils/account-status';
+} from '@/modules/identity-profile/ipc/handler';
+import { getAntigravityDbPaths, refreshAntigravityProcessCache } from '@/shared/platform/paths';
+import { runWithSwitchGuard } from '@/modules/antigravity-runtime/switch/switchGuard';
+import { executeSwitchFlow } from '@/modules/antigravity-runtime/switch/switchFlow';
+import type {
+  AntigravityAppTarget,
+} from '@/modules/account/types';
+import type {
+  DeviceProfile,
+  DeviceProfilesSnapshot,
+} from '@/modules/identity-profile/types';
+import {
+  classifyAccountStatusFromError,
+  extractErrorMessage,
+} from '@/modules/cloud-account/utils/account-status';
 
 // Helper to update tray
 function notifyTrayUpdate(account: CloudAccount) {

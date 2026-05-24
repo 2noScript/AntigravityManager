@@ -1,6 +1,6 @@
 import fs from 'fs';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { ProtobufUtils } from '../../utils/protobuf';
+import { ProtobufUtils } from '../../shared/serialization/protobuf';
 import { CloudAccountRepo } from '@/modules/cloud-account/persistence/cloudHandler';
 import { writeAntigravityCredentialStoreToken } from '@/modules/cloud-account/persistence/antigravityCredentialStore';
 import type { UserInfo } from '@/modules/cloud-account/services/GoogleAPIService';
@@ -51,20 +51,20 @@ vi.mock('drizzle-orm', () => ({
   desc: (value: unknown) => value,
 }));
 
-vi.mock('../../ipc/database/dbConnection', () => ({
+vi.mock('@/shared/persistence/database/dbConnection', () => ({
   openDrizzleConnection: () => ({
     raw: { close: vi.fn() },
     orm: mockOrm,
   }),
 }));
 
-vi.mock('../../utils/paths', () => ({
+vi.mock('../../shared/platform/paths', () => ({
   getAntigravityDbPaths: () => ['mock-db'],
   getCloudAccountsDbPath: () => 'mock-cloud-db',
   refreshAntigravityProcessCache: () => Promise.resolve(),
 }));
 
-vi.mock('../../utils/logger', () => ({
+vi.mock('../../shared/logging/logger', () => ({
   logger: {
     info: vi.fn(),
     warn: vi.fn(),
@@ -445,7 +445,7 @@ describe('CloudAccountRepo.syncFromIde', () => {
 
   it('should inject both formats when version detection fails', async () => {
     vi.resetModules();
-    vi.doMock('../../utils/antigravityVersion', () => ({
+    vi.doMock('@/modules/antigravity-runtime/utils/antigravityVersion', () => ({
       getAntigravityVersion: () => {
         throw new Error('version detection failed');
       },
@@ -635,7 +635,7 @@ describe('cloud switch fail-fast path', () => {
       },
     }));
 
-    vi.doMock('../../ipc/device/handler', () => ({
+    vi.doMock('@/modules/identity-profile/ipc/handler', () => ({
       applyDeviceProfile: applyDeviceProfileMock,
       ensureGlobalOriginalFromCurrentStorage: vi.fn(),
       generateDeviceProfile: vi.fn(() => account.device_profile),
@@ -648,27 +648,27 @@ describe('cloud switch fail-fast path', () => {
       })),
     }));
 
-    vi.doMock('../../ipc/process/handler', () => ({
+    vi.doMock('@/modules/antigravity-runtime/ipc/handler', () => ({
       closeAntigravity: vi.fn(async () => undefined),
       startAntigravity: startAntigravityMock,
       _waitForProcessExit: vi.fn(async () => undefined),
     }));
 
-    vi.doMock('../../ipc/switchMetrics', () => ({
+    vi.doMock('@/modules/antigravity-runtime/switch/switchMetrics', () => ({
       recordSwitchFailure: recordSwitchFailureMock,
       recordSwitchSuccess: recordSwitchSuccessMock,
     }));
 
-    vi.doMock('../../ipc/tray/handler', () => ({
+    vi.doMock('@/modules/app-shell/ipc/tray/handler', () => ({
       updateTrayMenu: vi.fn(),
     }));
 
-    vi.doMock('../../utils/paths', () => ({
+    vi.doMock('../../shared/platform/paths', () => ({
       getAntigravityDbPaths: () => [],
       refreshAntigravityProcessCache: () => Promise.resolve(),
     }));
 
-    vi.doMock('../../utils/logger', () => ({
+    vi.doMock('../../shared/logging/logger', () => ({
       logger: {
         info: vi.fn(),
         warn: vi.fn(),
@@ -768,7 +768,7 @@ describe('cloud oauth client key backfill', () => {
       },
     }));
 
-    vi.doMock('../../utils/logger', () => ({
+    vi.doMock('../../shared/logging/logger', () => ({
       logger: {
         info: vi.fn(),
         warn: vi.fn(),
@@ -776,8 +776,8 @@ describe('cloud oauth client key backfill', () => {
         debug: vi.fn(),
       },
     }));
-    vi.doMock('../../ipc/tray/handler', () => ({ updateTrayMenu: vi.fn() }));
-    vi.doMock('../../ipc/device/handler', () => ({
+    vi.doMock('@/modules/app-shell/ipc/tray/handler', () => ({ updateTrayMenu: vi.fn() }));
+    vi.doMock('@/modules/identity-profile/ipc/handler', () => ({
       ensureGlobalOriginalFromCurrentStorage: vi.fn(),
       generateDeviceProfile: vi.fn(),
       getStorageDirectoryPath: vi.fn(() => ''),
@@ -786,14 +786,16 @@ describe('cloud oauth client key backfill', () => {
       readCurrentDeviceProfile: vi.fn(),
       saveGlobalOriginalProfile: vi.fn(),
     }));
-    vi.doMock('../../utils/paths', () => ({
+    vi.doMock('../../shared/platform/paths', () => ({
       getAntigravityDbPaths: () => [],
       refreshAntigravityProcessCache: () => Promise.resolve(),
     }));
-    vi.doMock('../../ipc/switchGuard', () => ({
+    vi.doMock('@/modules/antigravity-runtime/switch/switchGuard', () => ({
       runWithSwitchGuard: async (_owner: string, fn: () => Promise<void>) => fn(),
     }));
-    vi.doMock('../../ipc/switchFlow', () => ({ executeSwitchFlow: vi.fn() }));
+    vi.doMock('@/modules/antigravity-runtime/switch/switchFlow', () => ({
+      executeSwitchFlow: vi.fn(),
+    }));
     vi.doMock('electron', () => ({ shell: { openExternal: vi.fn() } }));
 
     const { listCloudAccounts } = await import('@/modules/cloud-account/ipc/handler');
@@ -854,7 +856,7 @@ describe('cloud oauth client key backfill', () => {
       },
     }));
 
-    vi.doMock('../../utils/logger', () => ({
+    vi.doMock('../../shared/logging/logger', () => ({
       logger: {
         info: vi.fn(),
         warn: vi.fn(),
@@ -862,8 +864,8 @@ describe('cloud oauth client key backfill', () => {
         debug: vi.fn(),
       },
     }));
-    vi.doMock('../../ipc/tray/handler', () => ({ updateTrayMenu: vi.fn() }));
-    vi.doMock('../../ipc/device/handler', () => ({
+    vi.doMock('@/modules/app-shell/ipc/tray/handler', () => ({ updateTrayMenu: vi.fn() }));
+    vi.doMock('@/modules/identity-profile/ipc/handler', () => ({
       ensureGlobalOriginalFromCurrentStorage: vi.fn(),
       generateDeviceProfile: vi.fn(),
       getStorageDirectoryPath: vi.fn(() => ''),
@@ -872,14 +874,16 @@ describe('cloud oauth client key backfill', () => {
       readCurrentDeviceProfile: vi.fn(),
       saveGlobalOriginalProfile: vi.fn(),
     }));
-    vi.doMock('../../utils/paths', () => ({
+    vi.doMock('../../shared/platform/paths', () => ({
       getAntigravityDbPaths: () => [],
       refreshAntigravityProcessCache: () => Promise.resolve(),
     }));
-    vi.doMock('../../ipc/switchGuard', () => ({
+    vi.doMock('@/modules/antigravity-runtime/switch/switchGuard', () => ({
       runWithSwitchGuard: async (_owner: string, fn: () => Promise<void>) => fn(),
     }));
-    vi.doMock('../../ipc/switchFlow', () => ({ executeSwitchFlow: vi.fn() }));
+    vi.doMock('@/modules/antigravity-runtime/switch/switchFlow', () => ({
+      executeSwitchFlow: vi.fn(),
+    }));
     vi.doMock('electron', () => ({ shell: { openExternal: vi.fn() } }));
 
     const { listCloudAccounts } = await import('@/modules/cloud-account/ipc/handler');

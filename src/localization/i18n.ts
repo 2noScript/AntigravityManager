@@ -506,6 +506,9 @@ i18n
               api_key: 'API Key',
               auto_start: 'Auto Start with App',
               auto_start_desc: 'Start proxy service when application launches',
+              cloud_code_meta: 'Cloud Code metadata chunks',
+              cloud_code_meta_desc:
+                'Inject non-standard __cloudCodeMeta SSE chunks for legacy Cloud Code compatibility. Keep disabled for strict OpenAI clients.',
               local_access: 'Local network access:',
               select_ip: 'Select IP',
               no_token_warning: '⚠️ API key is not set. Access is open to everyone!',
@@ -1010,6 +1013,9 @@ i18n
               api_key: 'API 密钥',
               auto_start: '随应用启动',
               auto_start_desc: '应用启动时自动启动代理服务',
+              cloud_code_meta: 'Cloud Code 元数据块',
+              cloud_code_meta_desc:
+                '注入非标准 __cloudCodeMeta SSE 数据块，用于兼容旧版 Cloud Code。严格 OpenAI 客户端应保持关闭。',
               local_access: '局域网访问:',
               select_ip: '选择 IP',
               no_token_warning: '⚠️ 未设置 API 密钥。服务对公网开放！',

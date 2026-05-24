@@ -2,8 +2,8 @@ import { app } from 'electron';
 import * as Sentry from '@sentry/electron/main';
 import path from 'path';
 import fs from 'fs';
-import { getAgentDir } from './utils/paths';
-import { logger } from './utils/logger';
+import { getAgentDir } from './shared/platform/paths';
+import { logger } from './shared/logging/logger';
 
 function getQuickConfig() {
   try {

@@ -1,4 +1,4 @@
-import { ProxyConfig } from '../types/config';
+import { ProxyConfig } from '@/modules/config/types';
 
 let serverConfig: ProxyConfig | null = null;
 

@@ -2,10 +2,10 @@ import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
 import { AppModule } from './app.module';
-import { logger } from '../utils/logger';
-import { TokenManagerService } from './modules/proxy/token-manager.service';
+import { logger } from '../shared/logging/logger';
+import { TokenManagerService } from '../modules/proxy-gateway/server/token-manager.service';
 
-import { ProxyConfig } from '../types/config';
+import { ProxyConfig } from '@/modules/config/types';
 import { setServerConfig } from './server-config';
 
 let app: NestFastifyApplication | null = null;

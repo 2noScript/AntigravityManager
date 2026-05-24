@@ -1,15 +1,15 @@
 import React, { useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
-import { syncWithLocalTheme } from './actions/theme';
+import { syncWithLocalTheme } from '@/modules/app-shell/actions/theme';
 import { useTranslation } from 'react-i18next';
-import { updateAppLanguage } from './actions/language';
+import { updateAppLanguage } from '@/modules/app-shell/actions/language';
 import { RouterProvider } from '@tanstack/react-router';
-import { router } from './utils/routes';
+import { router } from './modules/app-shell/routing/routes';
 import './localization/i18n';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ThemeProvider } from '@/components/theme-provider';
+import { ThemeProvider } from '@/components/shared/theme-provider';
 import { Toaster } from '@/components/ui/toaster';
-import { LOCAL_STORAGE_KEYS } from '@/constants';
+import { LOCAL_STORAGE_KEYS } from '@/shared/constants';
 
 function AppContent() {
   const { i18n } = useTranslation();

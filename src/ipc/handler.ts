@@ -1,7 +1,7 @@
 import { RPCHandler } from '@orpc/server/message-port';
 import { router } from './router';
 
-import { logger } from '../utils/logger';
+import { logger } from '../shared/logging/logger';
 
 // Debug logging
 try {

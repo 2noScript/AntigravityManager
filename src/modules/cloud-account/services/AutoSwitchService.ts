@@ -1,7 +1,7 @@
 import { CloudAccountRepo } from '@/modules/cloud-account/persistence/cloudHandler';
 import { CloudAccount } from '@/modules/cloud-account/types';
 import { switchCloudAccount } from '@/modules/cloud-account/ipc/handler';
-import { logger } from '@/utils/logger';
+import { logger } from '@/shared/logging/logger';
 
 export class AutoSwitchService {
   /**

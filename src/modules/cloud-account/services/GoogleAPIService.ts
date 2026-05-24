@@ -1,13 +1,13 @@
 import { z } from 'zod';
-import { ConfigManager } from '@/ipc/config/manager';
+import { ConfigManager } from '@/modules/config/ipc/manager';
 import { AuthServer } from '@/modules/cloud-account/ipc/authServer';
 import { EnvHttpProxyAgent, ProxyAgent } from 'undici';
-import { logger } from '@/utils/logger';
+import { logger } from '@/shared/logging/logger';
 import {
   buildUserAgent,
   FALLBACK_VERSION,
   resolveLocalInstalledVersion,
-} from '@/server/modules/proxy/request-user-agent';
+} from '@/modules/proxy-gateway/server/request-user-agent';
 import { isEmpty, isNumber, isString, isUndefined } from 'lodash-es';
 import { v4 } from 'uuid';
 

@@ -34,9 +34,9 @@ import {
 import { formatDistanceToNow } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { useTranslation } from 'react-i18next';
-import { useAppConfig } from '@/hooks/useAppConfig';
-import { useProviderGrouping } from '@/hooks/useProviderGrouping';
-import { ProviderGroup } from '@/components/ProviderGroup';
+import { useAppConfig } from '@/modules/config/hooks/useAppConfig';
+import { useProviderGrouping } from '@/modules/cloud-account/hooks/useProviderGrouping';
+import { ProviderGroup } from '@/modules/cloud-account/components/ProviderGroup';
 import {
   clampQuotaPercentage,
   formatAiCreditsAmount,
@@ -47,9 +47,9 @@ import {
 } from '@/modules/cloud-account/utils/quota-display';
 import { useState } from 'react';
 import { useSetAccountProxy } from '@/modules/cloud-account/hooks/useCloudAccounts';
-import { isValidProxyUrl } from '@/utils/url';
-import { getValidationBlockedStatusLabel } from '@/components/accountValidationStatus';
-import type { AntigravityAppTarget } from '@/types/account';
+import { isValidProxyUrl } from '@/shared/utils/url';
+import { getValidationBlockedStatusLabel } from '@/modules/cloud-account/utils/accountValidationStatus';
+import type { AntigravityAppTarget } from '@/modules/account/types';
 
 type ModelQuotaEntry = [string, CloudQuotaModelInfo];
 

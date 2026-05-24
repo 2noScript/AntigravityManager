@@ -5,8 +5,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { desc, eq } from 'drizzle-orm';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import { isNumber, isObjectLike, isPlainObject, isString } from 'lodash-es';
-import { getCloudAccountsDbPath, getAntigravityDbPaths } from '@/utils/paths';
-import { logger } from '@/utils/logger';
+import { getCloudAccountsDbPath, getAntigravityDbPaths } from '@/shared/platform/paths';
+import { logger } from '@/shared/logging/logger';
 import {
   CloudAccount,
   CloudAccountSchema,
@@ -15,24 +15,26 @@ import {
 } from '@/modules/cloud-account/types';
 import {
   type AntigravityAppTarget,
-  type DeviceProfile,
-  type DeviceProfileVersion,
   resolveAntigravityAppTarget,
-} from '@/types/account';
-import { ItemTableValueRowSchema, TableInfoRowSchema } from '@/types/db';
-import { decryptWithMigration, encrypt, type KeySource } from '@/utils/security';
-import { ProtobufUtils } from '@/utils/protobuf';
+} from '@/modules/account/types';
+import type { DeviceProfile, DeviceProfileVersion } from '@/modules/identity-profile/types';
+import { ItemTableValueRowSchema, TableInfoRowSchema } from '@/shared/persistence/database/types';
+import { decryptWithMigration, encrypt, type KeySource } from '@/shared/security/security';
+import { ProtobufUtils } from '@/shared/serialization/protobuf';
 import { GoogleAPIService } from '@/modules/cloud-account/services/GoogleAPIService';
 import {
   getAntigravityVersion,
   isCredentialStoreVersion,
   isNewVersion,
-} from '@/utils/antigravityVersion';
-import { parseRow, parseRows } from '@/utils/sqlite';
-import { configureDatabase, openDrizzleConnection } from '@/ipc/database/dbConnection';
+} from '@/modules/antigravity-runtime/utils/antigravityVersion';
+import { parseRow, parseRows } from '@/shared/persistence/database/sqlite';
+import {
+  configureDatabase,
+  openDrizzleConnection,
+} from '@/shared/persistence/database/dbConnection';
 import { writeAntigravityCredentialStoreToken } from './antigravityCredentialStore';
-import { accounts, itemTable, settings } from '@/ipc/database/schema';
-import * as drizzleSchema from '@/ipc/database/schema';
+import { accounts, itemTable, settings } from '@/shared/persistence/database/schema';
+import * as drizzleSchema from '@/shared/persistence/database/schema';
 
 const SQLITE_BUSY_CODES = new Set(['SQLITE_BUSY', 'SQLITE_LOCKED']);
 const SQLITE_BUSY_TIMEOUT_MS = 3000;

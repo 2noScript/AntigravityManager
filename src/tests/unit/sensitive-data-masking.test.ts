@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { sanitizeObject, safeStringifyPacket } from '@/utils/sensitiveDataMasking';
+import { sanitizeObject, safeStringifyPacket } from '@/shared/security/sensitiveDataMasking';
 
 describe('sensitive data masking', () => {
   describe('sanitizeObject', () => {

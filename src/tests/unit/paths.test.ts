@@ -63,26 +63,26 @@ describe('Path Utilities', () => {
   });
 
   it('should get correct AppData directory', async () => {
-    const paths = await import('../../utils/paths');
+    const paths = await import('../../shared/platform/paths');
     const appData = paths.getAppDataDir();
     expect(appData).toBeDefined();
     expect(appData.length).toBeGreaterThan(0);
   });
 
   it('should get correct DB path', async () => {
-    const paths = await import('../../utils/paths');
+    const paths = await import('../../shared/platform/paths');
     const dbPath = paths.getAntigravityDbPath();
     expect(dbPath).toContain('state.vscdb');
   });
 
   it('should get correct storage path', async () => {
-    const paths = await import('../../utils/paths');
+    const paths = await import('../../shared/platform/paths');
     const storagePath = paths.getAntigravityStoragePath();
     expect(storagePath).toContain('storage.json');
   });
 
   it('should build Antigravity IDE DB and storage paths when target is ide', async () => {
-    const paths = await import('../../utils/paths');
+    const paths = await import('../../shared/platform/paths');
     expect(paths.getAntigravityDbPath('ide')).toContain('Antigravity IDE');
     expect(paths.getAntigravityDbPath('ide')).toContain('state.vscdb');
     expect(paths.getAntigravityStoragePath('ide')).toContain('Antigravity IDE');
@@ -90,7 +90,7 @@ describe('Path Utilities', () => {
   });
 
   it('should get correct executable path', async () => {
-    const paths = await import('../../utils/paths');
+    const paths = await import('../../shared/platform/paths');
     const execPath = paths.getAntigravityExecutablePath();
     if (process.platform === 'linux') {
       expect(execPath).toBe('/usr/share/antigravity/antigravity');
@@ -118,7 +118,7 @@ describe('Path Utilities', () => {
     vi.spyOn(fs, 'existsSync').mockReturnValue(true);
     findProcessMock.mockResolvedValue(runningProcesses);
 
-    const paths = await import('../../utils/paths');
+    const paths = await import('../../shared/platform/paths');
     await paths.refreshAntigravityProcessCache('ide');
     const userDataDir = path.resolve('D:\\Profiles\\AG IDE');
 
@@ -150,7 +150,7 @@ describe('Path Utilities', () => {
     });
     childProcessMock.execSync.mockReturnValue('');
 
-    const paths = await import('../../utils/paths');
+    const paths = await import('../../shared/platform/paths');
     const portableUserDataDir = path.join('C:\\Portable', 'Antigravity IDE', 'data', 'user-data');
 
     expect(paths.getAntigravityDbPath('ide')).toBe(
@@ -182,7 +182,7 @@ describe('Path Utilities', () => {
       return '';
     });
 
-    const paths = await import('../../utils/paths');
+    const paths = await import('../../shared/platform/paths');
     const portableUserDataDir = path.join('D:\\Apps', 'Antigravity', 'data', 'user-data');
 
     expect(paths.getAntigravityExecutablePath()).toBe(configuredExecutablePath);
@@ -222,7 +222,7 @@ describe('Path Utilities', () => {
       return '';
     });
 
-    const paths = await import('../../utils/paths');
+    const paths = await import('../../shared/platform/paths');
 
     expect(paths.getAntigravityExecutablePath()).toBe(classicPath);
     expect(paths.getAntigravityExecutablePath('ide')).toBe(idePath);
@@ -258,7 +258,7 @@ describe('Path Utilities', () => {
       return '';
     });
 
-    const paths = await import('../../utils/paths');
+    const paths = await import('../../shared/platform/paths');
 
     expect(
       paths.isTargetAntigravityProcessCandidate(
@@ -315,7 +315,7 @@ describe('Path Utilities', () => {
       return '';
     });
 
-    const paths = await import('../../utils/paths');
+    const paths = await import('../../shared/platform/paths');
 
     expect(
       paths.isTargetAntigravityProcessCandidate(
@@ -358,7 +358,7 @@ describe('Path Utilities', () => {
       return '';
     });
 
-    const paths = await import('../../utils/paths');
+    const paths = await import('../../shared/platform/paths');
 
     expect(paths.getConfiguredAntigravityArgs()).toEqual([
       '--user-data-dir',
@@ -390,7 +390,7 @@ describe('Path Utilities', () => {
     });
     findProcessMock.mockResolvedValue([runningProcess]);
 
-    const paths = await import('../../utils/paths');
+    const paths = await import('../../shared/platform/paths');
     await paths.refreshAntigravityProcessCache('ide');
 
     expect(paths.getAntigravityExecutablePath('ide')).toBe(executablePath);
@@ -433,7 +433,7 @@ describe('Path Utilities', () => {
       return [];
     });
 
-    const paths = await import('../../utils/paths');
+    const paths = await import('../../shared/platform/paths');
     await paths.refreshAntigravityProcessCache('classic');
 
     expect(findProcessMock).toHaveBeenCalledWith(

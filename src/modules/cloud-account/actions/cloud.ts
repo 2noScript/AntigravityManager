@@ -1,6 +1,7 @@
 import { ipc } from '@/ipc/manager';
-import type { AntigravityAppTarget, DeviceProfile } from '@/types/account';
-import { isValidProxyUrl } from '@/utils/url';
+import type { AntigravityAppTarget } from '@/modules/account/types';
+import type { DeviceProfile } from '@/modules/identity-profile/types';
+import { isValidProxyUrl } from '@/shared/utils/url';
 
 export function addGoogleAccount(input: { authCode: string; oauthClientKey?: string }) {
   return ipc.client.cloud.addGoogleAccount(input);

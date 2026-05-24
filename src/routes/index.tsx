@@ -2,7 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { CloudAccountList } from '@/modules/cloud-account/components/CloudAccountList';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
-import { getLocalizedErrorMessage } from '@/utils/errorMessages';
+import { getLocalizedErrorMessage } from '@/shared/utils/errorMessages';
 import { RefreshCw } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';

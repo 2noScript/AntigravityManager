@@ -2,9 +2,11 @@ import { beforeEach, describe, it, expect, vi } from 'vitest';
 import axios, { AxiosError } from 'axios';
 import { EventEmitter } from 'events';
 import { Readable } from 'node:stream';
-import { ProxyService } from '../../server/modules/proxy/proxy.service';
+import { ProxyService } from '../../modules/proxy-gateway/server/proxy.service';
 import { Observable } from 'rxjs';
-import { GeminiClient } from '../../server/modules/proxy/clients/gemini.client';
+import { GeminiClient } from '../../modules/proxy-gateway/server/clients/gemini.client';
+import { setServerConfig } from '../../server/server-config';
+import { DEFAULT_APP_CONFIG, ProxyConfig } from '@/modules/config/types';
 
 // Mock dependencies
 const mockTokenManager = {
@@ -18,6 +20,21 @@ const mockTokenManager = {
   resolveDynamicModelForAccount: vi.fn((_token: unknown, model: string) => model),
 };
 const mockGeminiClient = { streamGenerateInternal: vi.fn(), generateInternal: vi.fn() };
+
+function createProxyConfig(overrides: Partial<ProxyConfig> = {}): ProxyConfig {
+  return {
+    ...DEFAULT_APP_CONFIG.proxy,
+    ...overrides,
+    upstream_proxy: {
+      ...DEFAULT_APP_CONFIG.proxy.upstream_proxy,
+      ...(overrides.upstream_proxy ?? {}),
+    },
+    experimental: {
+      ...DEFAULT_APP_CONFIG.proxy.experimental,
+      ...(overrides.experimental ?? {}),
+    },
+  };
+}
 
 // Subclass to access private method
 class TestableProxyService extends ProxyService {
@@ -58,6 +75,7 @@ function createToken(id: string = 'acc-1') {
 describe('ProxyService Empty Stream Retry Logic', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    setServerConfig(createProxyConfig());
   });
 
   it('classifies retry matrix consistently', () => {
@@ -719,10 +737,54 @@ describe('ProxyService Protocol Parity Fixtures', () => {
     });
 
     const output = chunks.join('');
+    expect(output).not.toContain('__cloudCodeMeta');
     expect(output).toContain('"reasoning_content":"reasoning text"');
     expect(output).toContain('"tool_calls"');
     expect(output).toContain('"content":"final answer"');
     expect(output).toContain('data: [DONE]');
+  });
+
+  it('prepends legacy Cloud Code metadata only when explicitly enabled', async () => {
+    setServerConfig(
+      createProxyConfig({
+        experimental: {
+          enable_cloud_code_meta: true,
+        },
+      }),
+    );
+
+    const service = new TestableProxyService();
+    const stream = new EventEmitter();
+    const observable = (service as any).processStreamResponse(stream, 'gpt-4o-mini');
+
+    const chunks: string[] = [];
+    await new Promise<void>((resolve, reject) => {
+      observable.subscribe({
+        next: (chunk: string) => {
+          chunks.push(chunk);
+        },
+        error: reject,
+        complete: resolve,
+      });
+
+      const payload = JSON.stringify({
+        candidates: [
+          {
+            content: {
+              parts: [{ text: 'final answer' }],
+            },
+            finishReason: 'STOP',
+          },
+        ],
+      });
+
+      stream.emit('data', Buffer.from(`data: ${payload}\n`));
+      stream.emit('end');
+    });
+
+    const metaPayload = JSON.parse(chunks[0].trim().slice('data: '.length));
+    expect(metaPayload.__cloudCodeMeta.traceId).toMatch(/^req_[a-f0-9]{12}$/);
+    expect(chunks.join('')).toContain('"content":"final answer"');
   });
 
   it('propagates OpenAI-compatible upstream stream errors instead of completing with [DONE]', async () => {

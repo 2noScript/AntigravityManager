@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { ProtobufUtils } from '../../utils/protobuf';
+import { ProtobufUtils } from '../../shared/serialization/protobuf';
 
 function hasVarintField(data: Uint8Array, fieldNum: number, expectedValue?: bigint): boolean {
   let offset = 0;

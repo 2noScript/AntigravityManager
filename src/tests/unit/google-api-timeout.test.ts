@@ -157,7 +157,7 @@ describe('GoogleAPIService user info parsing', () => {
 
     vi.stubGlobal('fetch', fetchMock);
 
-    const { ConfigManager } = await import('../../ipc/config/manager');
+    const { ConfigManager } = await import('@/modules/config/ipc/manager');
     vi.spyOn(ConfigManager, 'loadConfig').mockReturnValue({
       proxy: {
         upstream_proxy: {
@@ -180,7 +180,8 @@ describe('GoogleAPIService user info parsing', () => {
 
 describe('CloudAccountList auth code auto-submit guard', () => {
   it('returns true for a fresh auth code while the dialog is open', async () => {
-    const { shouldAutoSubmitGoogleAuthCode } = await import('../../utils/googleAuthSubmission');
+    const { shouldAutoSubmitGoogleAuthCode } =
+      await import('@/modules/cloud-account/utils/googleAuthSubmission');
 
     expect(
       shouldAutoSubmitGoogleAuthCode({
@@ -193,7 +194,8 @@ describe('CloudAccountList auth code auto-submit guard', () => {
   });
 
   it('returns false after the same auth code was already auto-submitted', async () => {
-    const { shouldAutoSubmitGoogleAuthCode } = await import('../../utils/googleAuthSubmission');
+    const { shouldAutoSubmitGoogleAuthCode } =
+      await import('@/modules/cloud-account/utils/googleAuthSubmission');
 
     expect(
       shouldAutoSubmitGoogleAuthCode({
@@ -238,7 +240,7 @@ describe('GoogleAPIService fetchQuota fallback policy', () => {
 
     vi.stubGlobal('fetch', fetchMock);
 
-    const { ConfigManager } = await import('../../ipc/config/manager');
+    const { ConfigManager } = await import('@/modules/config/ipc/manager');
     vi.spyOn(ConfigManager, 'loadConfig').mockReturnValue({
       proxy: {
         upstream_proxy: {
@@ -249,7 +251,7 @@ describe('GoogleAPIService fetchQuota fallback policy', () => {
 
     const { GoogleAPIService } = await import('@/modules/cloud-account/services/GoogleAPIService');
     const { FALLBACK_VERSION, resolveLocalInstalledVersion } =
-      await import('../../server/modules/proxy/request-user-agent');
+      await import('../../modules/proxy-gateway/server/request-user-agent');
     const expectedVersion = resolveLocalInstalledVersion() ?? FALLBACK_VERSION;
 
     await expect(GoogleAPIService.fetchAICredits('access-token')).resolves.toEqual({
@@ -285,7 +287,7 @@ describe('GoogleAPIService fetchQuota fallback policy', () => {
 
     vi.stubGlobal('fetch', fetchMock);
 
-    const { ConfigManager } = await import('../../ipc/config/manager');
+    const { ConfigManager } = await import('@/modules/config/ipc/manager');
     vi.spyOn(ConfigManager, 'loadConfig').mockReturnValue({
       proxy: {
         upstream_proxy: {
@@ -330,7 +332,7 @@ describe('GoogleAPIService fetchQuota fallback policy', () => {
 
     vi.stubGlobal('fetch', fetchMock);
 
-    const { ConfigManager } = await import('../../ipc/config/manager');
+    const { ConfigManager } = await import('@/modules/config/ipc/manager');
     vi.spyOn(ConfigManager, 'loadConfig').mockReturnValue({
       proxy: {
         upstream_proxy: {
@@ -375,7 +377,7 @@ describe('GoogleAPIService fetchQuota fallback policy', () => {
 
     vi.stubGlobal('fetch', fetchMock);
 
-    const { ConfigManager } = await import('../../ipc/config/manager');
+    const { ConfigManager } = await import('@/modules/config/ipc/manager');
     vi.spyOn(ConfigManager, 'loadConfig').mockReturnValue({
       proxy: {
         upstream_proxy: {
@@ -407,7 +409,7 @@ describe('GoogleAPIService fetchQuota fallback policy', () => {
 
     vi.stubGlobal('fetch', fetchMock);
 
-    const { ConfigManager } = await import('../../ipc/config/manager');
+    const { ConfigManager } = await import('@/modules/config/ipc/manager');
     vi.spyOn(ConfigManager, 'loadConfig').mockReturnValue({
       proxy: {
         upstream_proxy: {
@@ -439,7 +441,7 @@ describe('GoogleAPIService fetchQuota fallback policy', () => {
 
     vi.stubGlobal('fetch', fetchMock);
 
-    const { ConfigManager } = await import('../../ipc/config/manager');
+    const { ConfigManager } = await import('@/modules/config/ipc/manager');
     vi.spyOn(ConfigManager, 'loadConfig').mockReturnValue({
       proxy: {
         upstream_proxy: {
@@ -496,7 +498,7 @@ describe('QuotaService fallback policy', () => {
         Boolean((error as { isAxiosError?: boolean })?.isAxiosError),
     }));
 
-    const { QuotaService } = await import('../../lib/antigravity/QuotaService');
+    const { QuotaService } = await import('../../modules/proxy-gateway/antigravity/QuotaService');
 
     await expect(QuotaService.fetchQuota('access-token', 'user@example.com')).rejects.toThrow(
       'HTTP 400 - {"error":"INVALID_ARGUMENT"}',
@@ -548,7 +550,7 @@ describe('QuotaService fallback policy', () => {
         Boolean((error as { isAxiosError?: boolean })?.isAxiosError),
     }));
 
-    const { QuotaService } = await import('../../lib/antigravity/QuotaService');
+    const { QuotaService } = await import('../../modules/proxy-gateway/antigravity/QuotaService');
 
     await expect(QuotaService.fetchQuota('access-token', 'user@example.com')).resolves.toEqual({
       quotaData: {

@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { render } from '@testing-library/react';
 import { test, expect } from 'vitest';
-import ToggleTheme from '@/components/toggle-theme';
+import ToggleTheme from '@/components/shared/toggle-theme';
 
 test('renders ToggleTheme', () => {
   const { getByRole } = render(<ToggleTheme />);

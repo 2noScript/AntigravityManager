@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { DEFAULT_APP_CONFIG, ProxyConfig } from '../../types/config';
+import { DEFAULT_APP_CONFIG, ProxyConfig } from '@/modules/config/types';
 import { setServerConfig } from '../../server/server-config';
-import { TokenManagerService } from '../../server/modules/proxy/token-manager.service';
+import { TokenManagerService } from '../../modules/proxy-gateway/server/token-manager.service';
 import { GoogleAPIService } from '@/modules/cloud-account/services/GoogleAPIService';
 
 function createProxyConfig(overrides: Partial<ProxyConfig>): ProxyConfig {

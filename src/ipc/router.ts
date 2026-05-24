@@ -1,17 +1,21 @@
-import { app } from './app';
-import { theme } from './theme';
-import { window } from './window';
-import { databaseRouter } from './database/router';
-import { accountRouter } from './account/router';
+import { app } from '@/modules/app-shell/ipc/app';
+import { theme } from '@/modules/app-shell/ipc/theme';
+import { window } from '@/modules/app-shell/ipc/window';
+import { databaseRouter } from '@/shared/persistence/database/router';
+import { accountRouter } from '@/modules/account/ipc/router';
 import { cloudRouter } from '@/modules/cloud-account/ipc/router';
-import { configRouter } from './config/router';
-import { gatewayRouter } from './gateway/router';
+import { configRouter } from '@/modules/config/ipc/router';
+import { gatewayRouter } from '@/modules/proxy-gateway/ipc/router';
 
 import { os } from '@orpc/server';
 import { z } from 'zod';
-import { isProcessRunning, closeAntigravity, startAntigravity } from './process/handler';
-import { systemHandler } from './system/handler';
-import { logger } from '../utils/logger';
+import {
+  isProcessRunning,
+  closeAntigravity,
+  startAntigravity,
+} from '@/modules/antigravity-runtime/ipc/handler';
+import { systemHandler } from '@/modules/app-shell/ipc/system/handler';
+import { logger } from '../shared/logging/logger';
 
 // Log middleware setup
 const logMiddleware = os.middleware(async (opts: any) => {

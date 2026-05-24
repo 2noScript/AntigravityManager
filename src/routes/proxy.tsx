@@ -7,8 +7,8 @@ import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { ipc } from '@/ipc/manager';
 import { useEffect, useState, type ReactNode } from 'react';
-import { useAppConfig } from '@/hooks/useAppConfig';
-import { ProxyConfig } from '@/types/config';
+import { useAppConfig } from '@/modules/config/hooks/useAppConfig';
+import { ProxyConfig } from '@/modules/config/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -434,6 +434,25 @@ print(response.choices[0].message.content)`;
               checked={proxyConfig.auto_start}
               onCheckedChange={(checked) =>
                 updateProxyConfig({ ...proxyConfig, auto_start: checked })
+              }
+            />
+          </div>
+
+          <div className="flex items-center justify-between rounded-lg border p-4">
+            <div className="space-y-1">
+              <Label>{t('proxy.config.cloud_code_meta')}</Label>
+              <p className="text-xs text-gray-500">{t('proxy.config.cloud_code_meta_desc')}</p>
+            </div>
+            <Switch
+              checked={proxyConfig.experimental.enable_cloud_code_meta}
+              onCheckedChange={(checked) =>
+                updateProxyConfig({
+                  ...proxyConfig,
+                  experimental: {
+                    ...proxyConfig.experimental,
+                    enable_cloud_code_meta: checked,
+                  },
+                })
               }
             />
           </div>

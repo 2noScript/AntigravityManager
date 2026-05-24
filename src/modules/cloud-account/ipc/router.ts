@@ -28,13 +28,15 @@ import { CloudAccountRepo } from '@/modules/cloud-account/persistence/cloudHandl
 import { CloudAccountSchema } from '@/modules/cloud-account/types';
 import {
   AntigravityAppTargetSchema,
+} from '@/modules/account/types';
+import {
   DeviceProfileSchema,
   DeviceProfilesSnapshotSchema,
-} from '@/types/account';
-import { logger } from '@/utils/logger';
-import { getSwitchMetricsSnapshot } from '@/ipc/switchMetrics';
-import { getSwitchGuardSnapshot } from '@/ipc/switchGuard';
-import { getDeviceHardeningSnapshot } from '@/ipc/device/handler';
+} from '@/modules/identity-profile/types';
+import { logger } from '@/shared/logging/logger';
+import { getSwitchMetricsSnapshot } from '@/modules/antigravity-runtime/switch/switchMetrics';
+import { getSwitchGuardSnapshot } from '@/modules/antigravity-runtime/switch/switchGuard';
+import { getDeviceHardeningSnapshot } from '@/modules/identity-profile/ipc/handler';
 
 const switchOwnerSchema = z.enum(['local-account-switch', 'cloud-account-switch']);
 const switchMetricBucketSchema = z.object({

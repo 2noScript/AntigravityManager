@@ -4,7 +4,7 @@ import {
   getProviderInfo,
   calculateProviderStats,
   groupModelsByProvider,
-} from '@/utils/provider-grouping';
+} from '@/modules/cloud-account/utils/provider-grouping';
 
 describe('detectProvider', () => {
   it('should categorize Claude models correctly', () => {

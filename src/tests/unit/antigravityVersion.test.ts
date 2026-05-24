@@ -3,7 +3,7 @@ import {
   compareVersion,
   isCredentialStoreVersion,
   isNewVersion,
-} from '../../utils/antigravityVersion';
+} from '@/modules/antigravity-runtime/utils/antigravityVersion';
 
 describe('antigravityVersion', () => {
   it('should compare versions correctly', () => {
@@ -58,11 +58,13 @@ describe('antigravityVersion', () => {
         readFileSync,
       },
     }));
-    vi.doMock('../../utils/paths', () => ({
+    vi.doMock('../../shared/platform/paths', () => ({
       getAntigravityExecutablePath: () => 'C:\\Program Files\\Antigravity\\Antigravity.exe',
     }));
 
-    const { getAntigravityVersion } = await import('../../utils/antigravityVersion');
+    const { getAntigravityVersion } = await import(
+      '@/modules/antigravity-runtime/utils/antigravityVersion'
+    );
     const version = getAntigravityVersion();
     const cached = getAntigravityVersion();
 

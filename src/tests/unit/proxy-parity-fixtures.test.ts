@@ -4,7 +4,7 @@ import { EventEmitter } from 'events';
 import { describe, expect, it, vi } from 'vitest';
 import { Observable } from 'rxjs';
 
-import { ProxyService } from '../../server/modules/proxy/proxy.service';
+import { ProxyService } from '../../modules/proxy-gateway/server/proxy.service';
 
 const mockTokenManager = {
   getNextToken: vi.fn(),

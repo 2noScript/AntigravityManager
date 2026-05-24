@@ -4,18 +4,18 @@ import {
   addAccountSnapshot,
   switchAccount,
   deleteAccount,
-} from '../../ipc/account/handler';
-import { restoreAccount } from '../../ipc/database/handler';
+} from '@/modules/account/ipc/handler';
+import { restoreAccount } from '@/shared/persistence/database/handler';
 import { CloudAccountRepo } from '@/modules/cloud-account/persistence/cloudHandler';
 import { writeAntigravityCredentialStoreToken } from '@/modules/cloud-account/persistence/antigravityCredentialStore';
-import { startAntigravity } from '../../ipc/process/handler';
+import { startAntigravity } from '@/modules/antigravity-runtime/ipc/handler';
 import fs from 'fs';
 import path from 'path';
-import { applyDeviceProfile, generateDeviceProfile } from '../../ipc/device/handler';
-import { getSwitchGuardSnapshot } from '../../ipc/switchGuard';
+import { applyDeviceProfile, generateDeviceProfile } from '@/modules/identity-profile/ipc/handler';
+import { getSwitchGuardSnapshot } from '@/modules/antigravity-runtime/switch/switchGuard';
 
 // Mock dependencies
-vi.mock('../../utils/paths', async () => {
+vi.mock('../../shared/platform/paths', async () => {
   const path = await import('path');
   const agentDir = path.join(process.cwd(), 'temp_test_agent');
   return {
@@ -28,7 +28,7 @@ vi.mock('../../utils/paths', async () => {
   };
 });
 
-vi.mock('../../ipc/database/handler', () => ({
+vi.mock('@/shared/persistence/database/handler', () => ({
   getCurrentAccountInfo: vi.fn(() => ({
     email: 'test@example.com',
     name: 'Test User',
@@ -54,14 +54,14 @@ vi.mock('@/modules/cloud-account/persistence/antigravityCredentialStore', () => 
   writeAntigravityCredentialStoreToken: vi.fn(),
 }));
 
-vi.mock('../../ipc/process/handler', () => ({
+vi.mock('@/modules/antigravity-runtime/ipc/handler', () => ({
   closeAntigravity: vi.fn(),
   startAntigravity: vi.fn(),
   _waitForProcessExit: vi.fn(),
   isProcessRunning: vi.fn(() => Promise.resolve(false)),
 }));
 
-vi.mock('../../ipc/device/handler', () => ({
+vi.mock('@/modules/identity-profile/ipc/handler', () => ({
   applyDeviceProfile: vi.fn(),
   ensureGlobalOriginalFromCurrentStorage: vi.fn(),
   generateDeviceProfile: vi.fn(() => ({
