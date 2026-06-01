@@ -31,6 +31,7 @@ import {
   classifyAccountStatusFromError,
   extractErrorMessage,
 } from '@/modules/cloud-account/utils/account-status';
+import { withTimingTrace } from '@/shared/observability/timingTrace';
 
 // Helper to update tray
 function notifyTrayUpdate(account: CloudAccount) {
@@ -561,48 +562,69 @@ export async function switchCloudAccount(
       }
 
       logger.info(`Switching to cloud account: ${account.email} (${account.id})`);
-      await refreshAntigravityProcessCache(appTarget);
+      await withTimingTrace(
+        'switch.cloud.prepare',
+        {
+          accountId: account.id,
+          appTarget: appTarget || 'classic',
+        },
+        async (trace) => {
+          await trace.phase('refreshProcessCacheMs', async () => {
+            await refreshAntigravityProcessCache(appTarget);
+          });
 
-      ensureGlobalOriginalFromCurrentStorage(appTarget);
-      if (!account.device_profile) {
-        const generated = generateDeviceProfile();
-        CloudAccountRepo.setDeviceBinding(account.id, generated, 'auto_generated');
-        saveGlobalOriginalProfile(generated);
-        account.device_profile = generated;
-      }
+          trace.phaseSync('deviceProfileSetupMs', () => {
+            ensureGlobalOriginalFromCurrentStorage(appTarget);
+            if (!account.device_profile) {
+              const generated = generateDeviceProfile();
+              CloudAccountRepo.setDeviceBinding(account.id, generated, 'auto_generated');
+              saveGlobalOriginalProfile(generated);
+              account.device_profile = generated;
+            }
+          });
 
-      const tokenRefreshPromise = (async () => {
-        const now = Math.floor(Date.now() / 1000);
-        if (!isString(account.token.refresh_token) || isEmpty(account.token.refresh_token.trim())) {
-          logger.warn(
-            `Token for ${account.email} has no refresh token; switched IDE session may expire without recovery.`,
-          );
-          return;
-        }
+          const tokenRefreshPromise = (async () => {
+            const now = Math.floor(Date.now() / 1000);
+            if (
+              !isString(account.token.refresh_token) ||
+              isEmpty(account.token.refresh_token.trim())
+            ) {
+              logger.warn(
+                `Token for ${account.email} has no refresh token; switched IDE session may expire without recovery.`,
+              );
+              return;
+            }
 
-        logger.info(`Refreshing token for ${account.email} before IDE injection...`);
-        try {
-          const refreshedToken = await GoogleAPIService.refreshAccessToken(
-            account.token.refresh_token,
-            account.proxy_url,
-            account.token.oauth_client_key,
-          );
+            logger.info(`Refreshing token for ${account.email} before IDE injection...`);
+            try {
+              const refreshedToken = await GoogleAPIService.refreshAccessToken(
+                account.token.refresh_token,
+                account.proxy_url,
+                account.token.oauth_client_key,
+              );
 
-          const updatedToken = mergeRefreshedToken(account.token, refreshedToken, now);
-          await CloudAccountRepo.updateToken(account.id, updatedToken);
+              const updatedToken = mergeRefreshedToken(account.token, refreshedToken, now);
+              await CloudAccountRepo.updateToken(account.id, updatedToken);
 
-          account.token = updatedToken;
-          logger.info(`Token refreshed for ${account.email}`);
-        } catch (error) {
-          logger.warn('Failed to refresh token before IDE injection', error);
-          await markAccountStatusFromError(account, error);
-          const reason = extractErrorMessage(error);
-          throw new Error(formatSwitchRefreshError(reason));
-        }
-      })();
+              account.token = updatedToken;
+              logger.info(`Token refreshed for ${account.email}`);
+            } catch (error) {
+              logger.warn('Failed to refresh token before IDE injection', error);
+              await markAccountStatusFromError(account, error);
+              const reason = extractErrorMessage(error);
+              throw new Error(formatSwitchRefreshError(reason));
+            }
+          })();
 
-      await tokenRefreshPromise;
-      await ensureEnterpriseProjectReady(account);
+          await trace.phase('tokenRefreshMs', async () => {
+            await tokenRefreshPromise;
+          });
+
+          await trace.phase('enterpriseProjectReadyMs', async () => {
+            await ensureEnterpriseProjectReady(account);
+          });
+        },
+      );
 
       await executeSwitchFlow({
         scope: 'cloud',

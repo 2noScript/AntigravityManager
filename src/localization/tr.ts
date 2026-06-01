@@ -158,8 +158,15 @@ const tr = {
       error_reporting: 'Hata Raporlama',
       error_reporting_desc:
         'Uygulamayı geliştirmemize yardımcı olmak için anonim hata raporları gönderin. Hiçbir kişisel veri toplanmaz.',
+      telemetry: 'Performans Telemetrisi',
+      telemetry_desc:
+        'Yavaş hesap geçişlerini teşhis etmek için anonim zamanlama metrikleri ve izler paylaşın.',
+      clarity: 'Microsoft Clarity',
+      clarity_desc:
+        'Uygulamayı iyileştirmek için anonim etkileşim tanıları, ısı haritaları ve oturum tekrarları paylaşın.',
+      clarity_unavailable: 'Microsoft Clarity bu derleme için yapılandırılmamış.',
       restart_note:
-        'Hata raporlama değişiklikleri, uygulamayı yeniden başlattıktan sonra geçerli olacaktır.',
+        'Bazı gözlemlenebilirlik değişiklikleri uygulamayı yeniden başlattıktan sonra geçerli olur.',
     },
     notifications: {
       title: 'Bildirimler',

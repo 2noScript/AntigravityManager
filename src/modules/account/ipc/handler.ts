@@ -1,13 +1,13 @@
 import fs from 'fs';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
-import { getAccountsFilePath, getBackupsDir, refreshAntigravityProcessCache } from '@/shared/platform/paths';
-import { logger } from '@/shared/logging/logger';
 import {
-  Account,
-  AccountBackupData,
-  AntigravityAppTarget,
-} from '@/modules/account/types';
+  getAccountsFilePath,
+  getBackupsDir,
+  refreshAntigravityProcessCache,
+} from '@/shared/platform/paths';
+import { logger } from '@/shared/logging/logger';
+import { Account, AccountBackupData, AntigravityAppTarget } from '@/modules/account/types';
 import type {
   DeviceProfile,
   DeviceProfilesSnapshot,
@@ -34,6 +34,7 @@ import {
 import { runWithSwitchGuard } from '@/modules/antigravity-runtime/switch/switchGuard';
 import { executeSwitchFlow } from '@/modules/antigravity-runtime/switch/switchFlow';
 import { shell } from 'electron';
+import { withTimingTrace } from '@/shared/observability/timingTrace';
 
 type AccountIndex = Record<string, Account>;
 const SWITCH_EXIT_TIMEOUT_MS = 10000;
@@ -235,7 +236,18 @@ export async function switchAccount(
 ): Promise<void> {
   await runWithSwitchGuard('local-account-switch', async () => {
     logger.info(`Switching to account: ${accountId}`);
-    await refreshAntigravityProcessCache(appTarget);
+    await withTimingTrace(
+      'switch.local.prepare',
+      {
+        accountId,
+        appTarget: appTarget || 'classic',
+      },
+      async (trace) => {
+        await trace.phase('refreshProcessCacheMs', async () => {
+          await refreshAntigravityProcessCache(appTarget);
+        });
+      },
+    );
 
     const accounts = loadAccountsIndex();
     const account = accounts[accountId];

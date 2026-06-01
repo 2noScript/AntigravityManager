@@ -1,12 +1,44 @@
 import { defineConfig, loadEnv } from 'vite';
 import path from 'path';
 import { sentryVitePlugin } from '@sentry/vite-plugin';
+import {
+  createOpenTelemetryBuildConfig,
+  type OpenTelemetryBuildEnv,
+} from './src/shared/observability/openTelemetryConfig';
+
+const mainProcessExternals = [
+  'better-sqlite3',
+  'keytar',
+  '@napi-rs/keyring',
+  '@opentelemetry/api',
+  '@opentelemetry/exporter-metrics-otlp-http',
+  '@opentelemetry/exporter-trace-otlp-http',
+  '@opentelemetry/resources',
+  '@opentelemetry/sdk-metrics',
+  '@opentelemetry/sdk-node',
+  '@opentelemetry/sdk-trace-node',
+];
+
+const openTelemetryBuildEnvKeys = [
+  'AGM_OTEL_DEBUG',
+  'NODE_ENV',
+  'OTEL_EXPORTER_OTLP_ENDPOINT',
+  'OTEL_EXPORTER_OTLP_HEADERS',
+  'OTEL_METRICS_EXPORTER',
+  'OTEL_RESOURCE_ATTRIBUTES',
+  'OTEL_SDK_DISABLED',
+  'OTEL_SERVICE_NAME',
+  'OTEL_TRACES_EXPORTER',
+] as const;
 
 // https://vitejs.dev/config
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   const sentryAuthToken = process.env.SENTRY_AUTH_TOKEN || env.SENTRY_AUTH_TOKEN;
   const shouldEnableSentry = mode === 'production' && Boolean(sentryAuthToken);
+  const openTelemetryBuildEnv = Object.fromEntries(
+    openTelemetryBuildEnvKeys.map((key) => [key, process.env[key] || env[key] || '']),
+  ) as OpenTelemetryBuildEnv;
 
   return {
     plugins: shouldEnableSentry
@@ -23,6 +55,9 @@ export default defineConfig(({ mode }) => {
       : [],
     define: {
       'process.env.SENTRY_DSN': JSON.stringify(process.env.SENTRY_DSN || env.SENTRY_DSN),
+      OPEN_TELEMETRY_BUILD_CONFIG: JSON.stringify(
+        createOpenTelemetryBuildConfig(openTelemetryBuildEnv),
+      ),
     },
     resolve: {
       alias: {
@@ -42,7 +77,7 @@ export default defineConfig(({ mode }) => {
     build: {
       sourcemap: true,
       rollupOptions: {
-        external: ['better-sqlite3', 'keytar', '@napi-rs/keyring'],
+        external: mainProcessExternals,
       },
     },
   };

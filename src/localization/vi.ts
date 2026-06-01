@@ -157,7 +157,14 @@ const vi = {
       error_reporting: 'Báo cáo lỗi',
       error_reporting_desc:
         'Gửi báo cáo lỗi ẩn danh để giúp cải thiện ứng dụng. Không thu thập dữ liệu cá nhân.',
-      restart_note: 'Thay đổi báo cáo lỗi sẽ có hiệu lực sau khi khởi động lại ứng dụng.',
+      telemetry: 'Telemetry hiệu năng',
+      telemetry_desc:
+        'Chia sẻ metric thời gian và trace ẩn danh để chẩn đoán chuyển tài khoản chậm.',
+      clarity: 'Microsoft Clarity',
+      clarity_desc:
+        'Chia sẻ chẩn đoán tương tác ẩn danh, heatmap và phát lại phiên để cải thiện ứng dụng.',
+      clarity_unavailable: 'Microsoft Clarity chưa được cấu hình cho bản build này.',
+      restart_note: 'Một số thay đổi quan sát sẽ có hiệu lực sau khi khởi động lại ứng dụng.',
     },
     notifications: {
       title: 'Thông báo',

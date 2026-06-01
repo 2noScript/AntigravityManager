@@ -13,6 +13,7 @@ import {
   recordSwitchFailure,
   recordSwitchSuccess,
 } from '@/modules/antigravity-runtime/switch/switchMetrics';
+import { withTimingTrace } from '@/shared/observability/timingTrace';
 
 export interface SwitchFlowOptions {
   scope: 'local' | 'cloud';
@@ -61,38 +62,67 @@ export async function executeSwitchFlow(options: SwitchFlowOptions): Promise<voi
   const { scope, appTarget, targetProfile, applyFingerprint, processExitTimeoutMs, performSwitch } =
     options;
 
+  let failureReason: SwitchFailureReason | null = null;
+  let waitExitTimedOut = false;
   let stage = 'close';
-  try {
-    await refreshAntigravityProcessCache(appTarget);
-    await closeAntigravity(appTarget);
-    try {
-      await _waitForProcessExit(processExitTimeoutMs, 100, appTarget);
-    } catch (error) {
-      logger.warn('Process did not exit cleanly within timeout, but proceeding...', error);
-    }
+  await withTimingTrace(
+    'switch.execute',
+    {
+      scope,
+      appTarget: appTarget || 'classic',
+      processExitTimeoutMs,
+    },
+    async (trace) => {
+      try {
+        await trace.phase('refreshProcessCacheMs', async () => {
+          await refreshAntigravityProcessCache(appTarget);
+        });
+        await trace.phase('closeMs', async () => {
+          await closeAntigravity(appTarget);
+        });
+        try {
+          await trace.phase('waitExitMs', async () => {
+            await _waitForProcessExit(processExitTimeoutMs, 100, appTarget);
+          });
+        } catch (error) {
+          waitExitTimedOut = true;
+          logger.warn('Process did not exit cleanly within timeout, but proceeding...', error);
+        }
 
-    stage = 'apply';
-    if (applyFingerprint) {
-      if (!targetProfile) {
-        stage = 'missing_profile';
-        throw new Error('Account has no bound identity profile');
+        stage = 'apply';
+        if (applyFingerprint) {
+          if (!targetProfile) {
+            stage = 'missing_profile';
+            throw new Error('Account has no bound identity profile');
+          }
+          trace.phaseSync('applyProfileMs', () => {
+            applyDeviceProfile(targetProfile, appTarget);
+          });
+        } else {
+          logger.warn(
+            'Identity profile apply is disabled by CRACK_IDENTITY_PROFILE_APPLY_ENABLED / CRACK_DEVICE_FINGERPRINT_ENABLED',
+          );
+        }
+
+        stage = 'switch';
+        await trace.phase('performSwitchMs', performSwitch);
+        stage = 'start';
+        await trace.phase('startMs', async () => {
+          await startAntigravity(appTarget);
+        });
+        recordSwitchSuccess(scope);
+      } catch (error) {
+        const reason = toSwitchFailureReason(stage, error);
+        const message = getErrorMessage(error);
+        failureReason = reason;
+        recordSwitchFailure(scope, reason, message);
+        throw error;
       }
-      applyDeviceProfile(targetProfile, appTarget);
-    } else {
-      logger.warn(
-        'Identity profile apply is disabled by CRACK_IDENTITY_PROFILE_APPLY_ENABLED / CRACK_DEVICE_FINGERPRINT_ENABLED',
-      );
-    }
-
-    stage = 'switch';
-    await performSwitch();
-    stage = 'start';
-    await startAntigravity(appTarget);
-    recordSwitchSuccess(scope);
-  } catch (error) {
-    const reason = toSwitchFailureReason(stage, error);
-    const message = getErrorMessage(error);
-    recordSwitchFailure(scope, reason, message);
-    throw error;
-  }
+    },
+    () => ({
+      stage,
+      waitExitTimedOut,
+      failureReason,
+    }),
+  );
 }

@@ -4,6 +4,10 @@ import path from 'path';
 import fs from 'fs';
 import { getAgentDir } from './shared/platform/paths';
 import { logger } from './shared/logging/logger';
+import {
+  initializeOpenTelemetry,
+  shutdownOpenTelemetry,
+} from './shared/observability/openTelemetry';
 
 function getQuickConfig() {
   try {
@@ -11,16 +15,34 @@ function getQuickConfig() {
     if (fs.existsSync(configPath)) {
       const content = fs.readFileSync(configPath, 'utf-8');
       const config = JSON.parse(content);
-      // Default to false (privacy by default)
-      return config.error_reporting_enabled;
+      return {
+        errorReportingEnabled: config.error_reporting_enabled !== false,
+        telemetryEnabled: config.telemetry_enabled !== false,
+      };
     }
   } catch (e) {
-    logger.error('Failed to read config for Sentry init:', e);
+    logger.error('Failed to read config for observability init:', e);
   }
-  return false;
+  return {
+    errorReportingEnabled: true,
+    telemetryEnabled: true,
+  };
 }
 
-if (getQuickConfig()) {
+const quickConfig = getQuickConfig();
+
+initializeOpenTelemetry({
+  enabled: quickConfig.telemetryEnabled,
+  serviceVersion: app.getVersion(),
+});
+
+app.on('before-quit', () => {
+  shutdownOpenTelemetry().catch((error) => {
+    logger.warn('Failed to flush OpenTelemetry before quit', error);
+  });
+});
+
+if (quickConfig.errorReportingEnabled) {
   Sentry.init({
     dsn: process.env.SENTRY_DSN,
     release: `antigravity-manager@${app.getVersion()}`,

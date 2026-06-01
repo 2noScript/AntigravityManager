@@ -182,8 +182,15 @@ i18n
               error_reporting: 'Error Reporting',
               error_reporting_desc:
                 'Send anonymous error reports to help us improve the app. No personal data is collected.',
+              telemetry: 'Performance Telemetry',
+              telemetry_desc:
+                'Share anonymous timing metrics and traces to diagnose slow account switching.',
+              clarity: 'Microsoft Clarity',
+              clarity_desc:
+                'Share anonymous interaction diagnostics, heatmaps, and session replay to improve the app.',
+              clarity_unavailable: 'Microsoft Clarity is not configured for this build.',
               restart_note:
-                'Changes to error reporting will take effect after restarting the application.',
+                'Some observability changes will take effect after restarting the application.',
             },
             notifications: {
               title: 'Notifications',
@@ -698,7 +705,12 @@ i18n
               description: '控制你的数据如何用于改进应用。',
               error_reporting: '错误上报',
               error_reporting_desc: '发送匿名错误报告以帮助我们改进应用。不收集个人数据。',
-              restart_note: '错误上报设置会在重启应用后生效。',
+              telemetry: '性能遥测',
+              telemetry_desc: '分享匿名耗时指标和链路数据，用于诊断账号切换变慢问题。',
+              clarity: 'Microsoft Clarity',
+              clarity_desc: '分享匿名交互诊断、热图和会话回放，帮助改进应用体验。',
+              clarity_unavailable: '当前构建未配置 Microsoft Clarity。',
+              restart_note: '部分可观测性设置会在重启应用后生效。',
             },
             notifications: {
               title: '通知',
@@ -1209,8 +1221,15 @@ i18n
               error_reporting: 'Отчеты об ошибках',
               error_reporting_desc:
                 'Отправляйте анонимные отчеты об ошибках, чтобы помочь нам улучшить приложение. Личные данные не собираются.',
+              telemetry: 'Телеметрия производительности',
+              telemetry_desc:
+                'Отправлять анонимные метрики времени и трассировки для диагностики медленного переключения аккаунтов.',
+              clarity: 'Microsoft Clarity',
+              clarity_desc:
+                'Отправлять анонимную диагностику взаимодействия, тепловые карты и записи сеансов для улучшения приложения.',
+              clarity_unavailable: 'Microsoft Clarity не настроен для этой сборки.',
               restart_note:
-                'Изменения в отчетах об ошибках вступят в силу после перезапуска приложения.',
+                'Некоторые изменения наблюдаемости вступят в силу после перезапуска приложения.',
             },
             notifications: {
               title: 'Уведомления',
