@@ -28,6 +28,7 @@ import {
   openLogDirectory,
   selectAntigravityExecutable,
 } from '@/modules/antigravity-runtime/actions/system';
+import { isClarityAvailable } from '@/shared/analytics/clarity';
 
 function parseArgsInput(value: string): string[] {
   const args: string[] = [];
@@ -75,6 +76,7 @@ function SettingsPage() {
   const [antigravityIdeExecutable, setAntigravityIdeExecutable] = useState('');
   const [antigravityArgs, setAntigravityArgs] = useState('');
   const [antigravityIdeArgs, setAntigravityIdeArgs] = useState('');
+  const clarityAvailable = isClarityAvailable();
 
   // Sync config to local state when loaded
   useEffect(() => {
@@ -537,6 +539,39 @@ function SettingsPage() {
                   onCheckedChange={async (checked) => {
                     if (config) {
                       await saveConfig({ ...config, error_reporting_enabled: checked });
+                    }
+                  }}
+                />
+              </div>
+              <div className="flex items-center justify-between rounded-lg border p-4">
+                <div className="space-y-1">
+                  <Label>{t('settings.privacy.telemetry')}</Label>
+                  <p className="text-xs text-gray-500">{t('settings.privacy.telemetry_desc')}</p>
+                </div>
+                <Switch
+                  checked={config?.telemetry_enabled ?? true}
+                  onCheckedChange={async (checked) => {
+                    if (config) {
+                      await saveConfig({ ...config, telemetry_enabled: checked });
+                    }
+                  }}
+                />
+              </div>
+              <div className="flex items-center justify-between rounded-lg border p-4">
+                <div className="space-y-1">
+                  <Label>{t('settings.privacy.clarity')}</Label>
+                  <p className="text-xs text-gray-500">
+                    {clarityAvailable
+                      ? t('settings.privacy.clarity_desc')
+                      : t('settings.privacy.clarity_unavailable')}
+                  </p>
+                </div>
+                <Switch
+                  checked={config?.clarity_enabled ?? true}
+                  disabled={!clarityAvailable}
+                  onCheckedChange={async (checked) => {
+                    if (config) {
+                      await saveConfig({ ...config, clarity_enabled: checked });
                     }
                   }}
                 />
