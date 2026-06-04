@@ -59,7 +59,7 @@ export const MainLayout: React.FC = () => {
         {/* Sidebar */}
         <aside
           className={cn(
-            'bg-muted/10 group relative flex flex-col border-r transition-all duration-300 ease-in-out',
+            'bg-card/75 backdrop-blur-lg group relative flex flex-col border-r border-border/70 transition-all duration-300 ease-in-out',
             isCollapsed ? 'w-[70px]' : 'w-64',
           )}
         >
@@ -78,7 +78,7 @@ export const MainLayout: React.FC = () => {
 
           <div className={cn('flex flex-col', isCollapsed ? 'items-center p-4' : 'p-6')}>
             <div className="flex items-center gap-2 overflow-hidden whitespace-nowrap">
-              <div className="bg-primary text-primary-foreground flex h-6 w-6 shrink-0 items-center justify-center rounded">
+              <div className="bg-primary text-primary-foreground flex h-6 w-6 shrink-0 items-center justify-center rounded shadow-sm">
                 <Rocket className="h-4 w-4" />
               </div>
               <div
@@ -112,9 +112,9 @@ export const MainLayout: React.FC = () => {
                         <Link
                           to={item.to}
                           className={cn(
-                            'mx-auto flex h-10 w-10 items-center justify-center rounded-md transition-colors',
+                            'mx-auto flex h-10 w-10 items-center justify-center rounded-md transition-all duration-200',
                             isActive
-                              ? 'bg-primary text-primary-foreground'
+                              ? 'bg-primary/10 text-primary shadow-[0_2px_8px_rgba(37,99,235,0.08)]'
                               : 'hover:bg-muted text-muted-foreground hover:text-foreground',
                           )}
                         >
@@ -132,10 +132,10 @@ export const MainLayout: React.FC = () => {
                     key={item.to}
                     to={item.to}
                     className={cn(
-                      'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                      'flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-all duration-200 border-l-2',
                       isActive
-                        ? 'bg-primary text-primary-foreground'
-                        : 'hover:bg-muted text-muted-foreground hover:text-foreground',
+                        ? 'bg-primary/10 text-primary border-primary font-semibold pl-2 rounded-l-none'
+                        : 'border-transparent hover:bg-muted text-muted-foreground hover:text-foreground',
                     )}
                   >
                     <item.icon className="h-4 w-4" />
