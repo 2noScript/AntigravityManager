@@ -170,6 +170,12 @@ if (isDev) {
   app.setName('Antigravity Manager Dev');
 }
 
+if (process.platform === 'win32') {
+  app.setAppUserModelId(
+    isDev ? 'com.draculabo.antigravity-manager.dev' : 'com.draculabo.antigravity-manager',
+  );
+}
+
 const gotSingleInstanceLock = app.requestSingleInstanceLock();
 
 if (!gotSingleInstanceLock) {
@@ -217,7 +223,14 @@ function createWindow({ startHidden }: { startHidden: boolean }) {
 
   logger.info('createWindow: start');
   const preload = path.join(__dirname, 'preload.js');
+  const windowIcon =
+    inDevelopment && process.platform === 'win32'
+      ? path.join(process.cwd(), 'images/icon.ico')
+      : inDevelopment
+        ? path.join(process.cwd(), 'src/assets/icon.png')
+        : path.join(__dirname, '../assets/icon.png');
   logger.info(`createWindow: preload path: ${preload}`);
+  logger.info(`createWindow: window icon path: ${windowIcon}`);
 
   logger.info('createWindow: attempting to create BrowserWindow');
   const mainWindow = new BrowserWindow({
@@ -232,10 +245,7 @@ function createWindow({ startHidden }: { startHidden: boolean }) {
       nodeIntegrationInSubFrames: false,
       preload: preload,
     },
-    // Use process.cwd() in dev to find the icon reliably
-    icon: inDevelopment
-      ? path.join(process.cwd(), 'src/assets/icon.png')
-      : path.join(__dirname, '../assets/icon.png'),
+    icon: windowIcon,
   });
   globalMainWindow = mainWindow;
   logger.info('createWindow: BrowserWindow instance created');
