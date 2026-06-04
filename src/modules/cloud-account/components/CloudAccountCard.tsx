@@ -75,15 +75,15 @@ const MODEL_DISPLAY_REPLACEMENTS: Array<[string, string]> = [
 ];
 
 const QUOTA_TEXT_COLOR_CLASS_BY_STATUS: Record<QuotaStatus, string> = {
-  high: 'text-green-500',
-  medium: 'text-yellow-500',
-  low: 'text-red-500',
+  high: 'text-emerald-600 dark:text-emerald-400 font-semibold',
+  medium: 'text-amber-600 dark:text-amber-500 font-semibold',
+  low: 'text-rose-600 dark:text-rose-400 font-semibold',
 };
 
 const QUOTA_BAR_COLOR_CLASS_BY_STATUS: Record<QuotaStatus, string> = {
-  high: 'bg-emerald-500',
-  medium: 'bg-amber-500',
-  low: 'bg-rose-500',
+  high: 'bg-gradient-to-r from-emerald-400 to-teal-500 shadow-[0_0_8px_rgba(16,185,129,0.3)]',
+  medium: 'bg-gradient-to-r from-amber-400 to-orange-500 shadow-[0_0_8px_rgba(245,158,11,0.25)]',
+  low: 'bg-gradient-to-r from-rose-500 to-red-600 shadow-[0_0_8px_rgba(239,68,68,0.3)]',
 };
 
 function isGeminiProLowModel(modelName: string): boolean {
@@ -280,7 +280,7 @@ export function CloudAccountCard({
                 >
                   {info.percentage}%
                 </span>
-                <div className="bg-muted h-1 w-16 overflow-hidden rounded-full">
+                <div className="bg-muted/70 border-border/20 h-1.5 w-16 overflow-hidden rounded-full border shadow-inner">
                   <div
                     className={`h-full rounded-full transition-all duration-300 ${getQuotaBarColorClass(info.percentage)}`}
                     style={{ width: `${clampQuotaPercentage(info.percentage)}%` }}
@@ -357,7 +357,7 @@ export function CloudAccountCard({
 
   return (
     <Card
-      className={`group bg-card hover:border-primary/40 flex h-full flex-col overflow-hidden border transition-all duration-200 hover:shadow-sm ${isSelected ? 'ring-primary border-primary/50 ring-2' : ''}`}
+      className={`group bg-card hover:border-primary/30 border-border/80 relative flex h-full flex-col overflow-hidden rounded-xl border transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.06),0_4px_12px_-2px_rgba(0,0,0,0.03)] ${isSelected ? 'ring-primary border-primary/50 ring-2' : ''}`}
     >
       <CardHeader className="relative flex flex-row items-center gap-4 space-y-0 pb-2">
         {onToggleSelection && (
@@ -379,7 +379,7 @@ export function CloudAccountCard({
             className="bg-muted h-10 w-10 rounded-full border"
           />
         ) : (
-          <div className="bg-primary/10 text-primary flex h-10 w-10 items-center justify-center rounded-full border">
+          <div className="bg-primary/10 text-primary flex h-10 w-10 items-center justify-center rounded-full border font-bold">
             {account.name?.[0]?.toUpperCase() || 'A'}
           </div>
         )}
@@ -387,12 +387,14 @@ export function CloudAccountCard({
           <CardTitle className="truncate text-base font-semibold">
             {account.name || t('cloud.card.unknown')}
           </CardTitle>
-          <CardDescription className="truncate text-xs">{account.email}</CardDescription>
+          <CardDescription className="text-muted-foreground truncate text-xs">
+            {account.email}
+          </CardDescription>
 
           {(account.is_active_classic || account.is_active_ide) && (
             <div className="mt-1.5 flex flex-wrap gap-1">
               {account.is_active_classic && (
-                <span className="dark:text-green-450 flex items-center gap-1 rounded border border-green-500/20 bg-green-500/10 px-1.5 py-0.5 text-[9px] font-bold text-green-600">
+                <span className="flex items-center gap-1 rounded border border-green-500/20 bg-green-500/10 px-1.5 py-0.5 text-[9px] font-bold text-green-600 dark:text-green-400">
                   <span className="relative flex h-1 w-1">
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>
                     <span className="relative inline-flex h-1 w-1 rounded-full bg-green-500"></span>
@@ -401,7 +403,7 @@ export function CloudAccountCard({
                 </span>
               )}
               {account.is_active_ide && (
-                <span className="dark:text-indigo-455 flex items-center gap-1 rounded border border-indigo-500/20 bg-indigo-500/10 px-1.5 py-0.5 text-[9px] font-bold text-indigo-600">
+                <span className="flex items-center gap-1 rounded border border-indigo-500/20 bg-indigo-500/10 px-1.5 py-0.5 text-[9px] font-bold text-indigo-600 dark:text-indigo-400">
                   <span className="relative flex h-1 w-1">
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-indigo-400 opacity-75"></span>
                     <span className="relative inline-flex h-1 w-1 rounded-full bg-indigo-500"></span>
@@ -434,7 +436,11 @@ export function CloudAccountCard({
         {allModelEntries.length > 0 && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 cursor-pointer rounded-full">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="hover:bg-muted h-8 w-8 cursor-pointer rounded-full"
+              >
                 {(() => {
                   const hiddenCount = allModelEntries.filter(
                     ([modelName]) => config?.model_visibility?.[modelName] === false,
@@ -479,55 +485,25 @@ export function CloudAccountCard({
             </DropdownMenuContent>
           </DropdownMenu>
         )}
-
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8 cursor-pointer rounded-full">
-              <MoreVertical className="h-4 w-4" />
-              <span className="sr-only">Menu</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>{t('cloud.card.actions')}</DropdownMenuLabel>
-            <DropdownMenuItem onClick={() => onRefresh(account.id)} disabled={isRefreshing}>
-              <RefreshCw className="mr-2 h-4 w-4" />
-              {t('cloud.card.refresh')}
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => onManageIdentity(account.id)}>
-              <Fingerprint className="mr-2 h-4 w-4" />
-              {t('cloud.card.identityProfile')}
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={() => onDelete(account.id)}
-              className="text-destructive focus:text-destructive"
-              disabled={isDeleting}
-            >
-              <Trash className="mr-2 h-4 w-4" />
-              {t('cloud.card.delete')}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
       </CardHeader>
 
-      <CardContent className="flex-1 pb-2">
-        <div className="mb-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+      <CardContent className="flex-1 pb-4">
+        <div className="mb-3.5 flex items-center justify-between">
+          <div className="flex flex-wrap items-center gap-1.5">
             <Badge
               variant={
                 account.status === 'rate_limited' || account.status === 'expired'
                   ? 'destructive'
                   : 'outline'
               }
-              className="text-xs"
+              className="px-2 py-0.5 text-[10px] font-bold tracking-wide"
             >
               {account.provider.toUpperCase()}
             </Badge>
             <AccountTierBadge account={account} unknownLabel={t('cloud.tierFilter.unknown')} />
 
             {validationBlockedStatusLabel && (
-              <span className="text-destructive text-xs font-medium">
+              <span className="text-destructive bg-destructive/10 border-destructive/20 rounded border px-1.5 py-0.5 text-[11px] font-semibold">
                 {validationBlockedStatusLabel}
               </span>
             )}
@@ -536,7 +512,7 @@ export function CloudAccountCard({
           <div
             onMouseEnter={() => setMenuOpen(true)}
             onMouseLeave={() => setMenuOpen(false)}
-            className="relative"
+            className="relative shrink-0"
           >
             <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
               <DropdownMenuTrigger asChild>
@@ -544,28 +520,28 @@ export function CloudAccountCard({
                   variant={isActiveAnywhere ? 'ghost' : 'secondary'}
                   size="sm"
                   className={cn(
-                    'h-8 cursor-pointer px-3 text-xs font-semibold transition-all duration-200',
+                    'h-7 cursor-pointer px-2.5 text-[11px] font-semibold transition-all duration-200',
                     isActiveAnywhere
                       ? 'bg-green-500/10 text-green-600 hover:bg-green-500/15 dark:text-green-500'
                       : '',
                   )}
                 >
                   {isSwitching ? (
-                    <RefreshCw className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                    <RefreshCw className="mr-1 h-3 w-3 animate-spin" />
                   ) : isActiveAnywhere ? (
-                    <span className="relative mr-2 flex h-2 w-2">
+                    <span className="relative mr-1.5 flex h-1.5 w-1.5">
                       <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>
-                      <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500"></span>
+                      <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-green-500"></span>
                     </span>
                   ) : (
-                    <Power className="mr-1.5 h-3.5 w-3.5" />
+                    <Power className="mr-1 h-3 w-3" />
                   )}
                   {isActiveAnywhere ? t('cloud.card.active') : t('cloud.card.use')}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align="end"
-                className="w-56"
+                className="animate-in fade-in zoom-in-95 w-56 duration-100"
                 onMouseEnter={() => setMenuOpen(true)}
               >
                 <DropdownMenuLabel className="text-muted-foreground px-2 py-1.5 text-[10px] tracking-wider uppercase">
@@ -621,44 +597,113 @@ export function CloudAccountCard({
         </div>
       </CardContent>
 
-      <CardFooter className="bg-muted/20 text-muted-foreground justify-between border-t p-2 px-4 text-xs">
-        <span>
-          {t('cloud.card.used')}{' '}
-          {formatDistanceToNow(account.last_used * 1000, { addSuffix: true })}
-        </span>
-        <div className="flex items-center gap-2">
-          <Input
-            value={proxyUrl}
-            onChange={(e) => {
-              setProxyUrl(e.target.value);
-              setProxySaved(false);
-            }}
-            onBlur={() => {
-              const trimmed = proxyUrl.trim();
-              if (trimmed && !isValidProxyUrl(trimmed)) {
-                setProxyUrl(account.proxy_url || '');
-                return;
-              }
-              if (trimmed !== (account.proxy_url || '')) {
-                setAccountProxy.mutate({
-                  accountId: account.id,
-                  proxyUrl: trimmed || null,
-                });
-                setProxySaved(true);
-                setTimeout(() => setProxySaved(false), 2000);
-              }
-            }}
-            placeholder={t('cloud.card.proxyPlaceholder')}
-            className="h-6 w-40 text-xs"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.currentTarget.blur();
-              }
-            }}
-          />
-          {proxySaved && (
-            <span className="text-[10px] text-green-500">{t('cloud.card.proxySaved')}</span>
+      <CardFooter className="bg-muted/10 relative mt-auto flex h-11 shrink-0 items-center justify-between overflow-hidden border-t p-2 px-4">
+        {/* Idle State / Used Time Indicator */}
+        <div className="flex w-full items-center justify-between transition-all duration-300 group-hover:pointer-events-none group-hover:opacity-0">
+          <span className="text-muted-foreground truncate text-[11px]">
+            {t('cloud.card.used')}{' '}
+            {formatDistanceToNow(account.last_used * 1000, { addSuffix: true })}
+          </span>
+          {account.proxy_url && (
+            <span className="text-primary bg-primary/10 border-primary/20 origin-right scale-90 rounded-full border px-1.5 py-0.5 text-[9px] font-semibold">
+              Proxy
+            </span>
           )}
+        </div>
+
+        {/* Hover State Container (fades in, fixed h-11) */}
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-between gap-3 p-2 px-4 opacity-0 transition-all duration-300 ease-in-out group-hover:pointer-events-auto group-hover:opacity-100">
+          {/* Action Icons group with Tooltips */}
+          <div className="flex shrink-0 items-center gap-1">
+            <TooltipProvider>
+              {/* Refresh Button */}
+              <Tooltip delayDuration={300}>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="hover:bg-accent border-border/50 h-7 w-7 cursor-pointer rounded-md"
+                    onClick={() => onRefresh(account.id)}
+                    disabled={isRefreshing}
+                  >
+                    <RefreshCw className={cn('h-3.5 w-3.5', isRefreshing && 'animate-spin')} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="text-xs">{t('cloud.card.refresh')}</TooltipContent>
+              </Tooltip>
+
+              {/* Profile Button */}
+              <Tooltip delayDuration={300}>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="hover:bg-accent border-border/50 h-7 w-7 cursor-pointer rounded-md"
+                    onClick={() => onManageIdentity(account.id)}
+                  >
+                    <Fingerprint className="h-3.5 w-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="text-xs">
+                  {t('cloud.card.identityProfile')}
+                </TooltipContent>
+              </Tooltip>
+
+              {/* Delete Button */}
+              <Tooltip delayDuration={300}>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="text-destructive hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 border-border/50 h-7 w-7 cursor-pointer rounded-md"
+                    onClick={() => onDelete(account.id)}
+                    disabled={isDeleting}
+                  >
+                    <Trash className="h-3.5 w-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="text-xs">{t('cloud.card.delete')}</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+
+          {/* Proxy Setting Input */}
+          <div className="relative min-w-0 flex-1">
+            <Input
+              value={proxyUrl}
+              onChange={(e) => {
+                setProxyUrl(e.target.value);
+                setProxySaved(false);
+              }}
+              onBlur={() => {
+                const trimmed = proxyUrl.trim();
+                if (trimmed && !isValidProxyUrl(trimmed)) {
+                  setProxyUrl(account.proxy_url || '');
+                  return;
+                }
+                if (trimmed !== (account.proxy_url || '')) {
+                  setAccountProxy.mutate({
+                    accountId: account.id,
+                    proxyUrl: trimmed || null,
+                  });
+                  setProxySaved(true);
+                  setTimeout(() => setProxySaved(false), 2000);
+                }
+              }}
+              placeholder={t('cloud.card.proxyPlaceholder')}
+              className="bg-muted/20 border-border/40 focus-visible:bg-background focus-visible:ring-primary/30 h-7 w-full rounded-md text-[11px] transition-all focus-visible:ring-1"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.currentTarget.blur();
+                }
+              }}
+            />
+            {proxySaved && (
+              <span className="bg-background absolute top-1/2 right-2 -translate-y-1/2 rounded px-1 text-[9px] font-semibold text-green-500">
+                {t('cloud.card.proxySaved')}
+              </span>
+            )}
+          </div>
         </div>
       </CardFooter>
     </Card>

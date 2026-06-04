@@ -98,15 +98,15 @@ const GRID_LAYOUT_CLASSES: Record<GridLayout, string> = {
 };
 
 const GLOBAL_QUOTA_BAR_COLOR_CLASS_BY_STATUS: Record<QuotaStatus, string> = {
-  high: 'bg-emerald-500',
-  medium: 'bg-amber-500',
-  low: 'bg-rose-500',
+  high: 'bg-gradient-to-r from-emerald-400 to-teal-500 shadow-[0_0_8px_rgba(16,185,129,0.3)]',
+  medium: 'bg-gradient-to-r from-amber-400 to-orange-500 shadow-[0_0_8px_rgba(245,158,11,0.25)]',
+  low: 'bg-gradient-to-r from-rose-500 to-red-600 shadow-[0_0_8px_rgba(239,68,68,0.3)]',
 };
 
 const GLOBAL_QUOTA_TEXT_COLOR_CLASS_BY_STATUS: Record<QuotaStatus, string> = {
-  high: 'text-emerald-600 dark:text-emerald-400',
-  medium: 'text-amber-600 dark:text-amber-400',
-  low: 'text-rose-600 dark:text-rose-400',
+  high: 'text-emerald-600 dark:text-emerald-400 font-semibold',
+  medium: 'text-amber-600 dark:text-amber-500 font-semibold',
+  low: 'text-rose-600 dark:text-rose-400 font-semibold',
 };
 
 export function CloudAccountList() {
@@ -698,46 +698,46 @@ export function CloudAccountList() {
 
   return (
     <div className="space-y-5 pb-20">
-      <div className="bg-card rounded-lg border p-5">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="flex shrink-0 flex-col gap-1">
-            <h2 className="text-2xl font-bold tracking-tight">{t('cloud.title')}</h2>
-            <p className="text-muted-foreground max-w-2xl">{t('cloud.description')}</p>
+      <div className="bg-card rounded-xl border border-border/80 p-6 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-5">
+          <div className="flex shrink-0 flex-col gap-1.5">
+            <h2 className="text-2xl font-bold tracking-tight text-foreground">{t('cloud.title')}</h2>
+            <p className="text-muted-foreground text-sm max-w-2xl">{t('cloud.description')}</p>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <div className="bg-muted/50 rounded-md border px-3 py-2">
-              <div className="text-muted-foreground text-[11px] uppercase">
+          <div className="flex flex-wrap gap-2.5">
+            <div className="bg-muted/30 rounded-xl border border-border/40 px-4 py-2.5 min-w-[80px]">
+              <div className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider">
                 {t('cloud.card.actions')}
               </div>
-              <div className="text-base font-semibold">{totalAccounts}</div>
+              <div className="text-lg font-bold mt-0.5">{totalAccounts}</div>
             </div>
-            <div className="bg-muted/50 rounded-md border px-3 py-2">
-              <div className="text-muted-foreground text-[11px] uppercase">
+            <div className="bg-muted/30 rounded-xl border border-border/40 px-4 py-2.5 min-w-[80px]">
+              <div className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider">
                 {t('cloud.card.active')}
               </div>
-              <div className="text-base font-semibold text-emerald-600">{activeAccounts}</div>
+              <div className="text-lg font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">{activeAccounts}</div>
             </div>
-            <div className="bg-muted/50 rounded-md border px-3 py-2">
-              <div className="text-muted-foreground text-[11px] uppercase">
+            <div className="bg-muted/30 rounded-xl border border-border/40 px-4 py-2.5 min-w-[80px]">
+              <div className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider">
                 {t('cloud.card.rateLimited')}
               </div>
-              <div className="text-base font-semibold text-rose-600">{rateLimitedAccounts}</div>
+              <div className="text-lg font-bold text-rose-600 dark:text-rose-400 mt-0.5">{rateLimitedAccounts}</div>
             </div>
             {/* Global Quota */}
             {overallQuotaPercentage !== null && (
-              <div className="bg-muted/50 rounded-md border px-3 py-2">
-                <div className="text-muted-foreground text-[11px] uppercase">
+              <div className="bg-muted/30 rounded-xl border border-border/40 px-4 py-2.5 min-w-[150px]">
+                <div className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider">
                   {t('cloud.globalQuota')}
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2.5 mt-1.5">
                   <span
-                    className={`text-base font-semibold ${GLOBAL_QUOTA_TEXT_COLOR_CLASS_BY_STATUS[effectiveQuotaStatus]}`}
+                    className={`text-base font-bold ${GLOBAL_QUOTA_TEXT_COLOR_CLASS_BY_STATUS[effectiveQuotaStatus]}`}
                   >
                     {overallQuotaPercentage}%
                   </span>
-                  <div className="bg-muted h-2 w-20 overflow-hidden rounded-full">
+                  <div className="bg-muted/60 h-2 w-20 overflow-hidden rounded-full border border-border/20 shadow-inner">
                     <div
-                      className={`h-full rounded-full transition-all duration-300 ${GLOBAL_QUOTA_BAR_COLOR_CLASS_BY_STATUS[effectiveQuotaStatus]}`}
+                      className={`h-full rounded-full transition-all duration-500 ${GLOBAL_QUOTA_BAR_COLOR_CLASS_BY_STATUS[effectiveQuotaStatus]}`}
                       style={{ width: `${clampQuotaPercentage(overallQuotaPercentage)}%` }}
                     />
                   </div>
