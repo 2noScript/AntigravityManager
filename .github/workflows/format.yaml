@@ -5,6 +5,7 @@ on:
 
 jobs:
   tests-unit:
+    name: Check formatting
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
