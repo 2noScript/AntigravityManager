@@ -1,4 +1,4 @@
-import { AlertTriangle, FileText, Loader2, RefreshCw } from 'lucide-react';
+import { AlertTriangle, ExternalLink, FileText, Loader2, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import {
@@ -9,7 +9,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { getErrorDetailsText, getLocalizedErrorMessage } from '@/shared/utils/errorMessages';
+import {
+  getErrorDetailsText,
+  getLocalizedErrorMessage,
+  isDataMigrationError,
+} from '@/shared/utils/errorMessages';
+
+const GITHUB_REPOSITORY_URL = 'https://github.com/Draculabo/AntigravityManager';
+const GITHUB_ISSUES_URL = 'https://github.com/Draculabo/AntigravityManager/issues';
 
 interface CloudAccountLoadErrorProps {
   error?: unknown;
@@ -28,6 +35,7 @@ export function CloudAccountLoadError({ error, onRetry }: CloudAccountLoadErrorP
   const { t } = useTranslation();
   const message = error ? getLocalizedErrorMessage(error, t) : t('cloud.error.loadFailed');
   const details = error ? getErrorDetailsText(error) : '';
+  const shouldShowDataRepairGuidance = isDataMigrationError(error);
 
   return (
     <div
@@ -39,6 +47,34 @@ export function CloudAccountLoadError({ error, onRetry }: CloudAccountLoadErrorP
         <div className="min-w-0 flex-1">
           <div className="text-destructive text-sm font-medium">{t('cloud.error.loadFailed')}</div>
           <div className="text-foreground mt-2 text-sm whitespace-pre-wrap">{message}</div>
+          {shouldShowDataRepairGuidance ? (
+            <div className="border-border bg-background/70 mt-4 rounded-md border p-4">
+              <div className="text-sm font-medium">{t('cloud.error.dataRepair.title')}</div>
+              <p className="text-muted-foreground mt-2 text-sm">
+                {t('cloud.error.dataRepair.description')}
+              </p>
+              <ol className="text-muted-foreground mt-3 list-decimal space-y-1 pl-5 text-sm">
+                <li>{t('cloud.error.dataRepair.stepReLogin')}</li>
+                <li>{t('cloud.error.dataRepair.stepMacPrivacy')}</li>
+                <li>{t('cloud.error.dataRepair.stepCheckGithub')}</li>
+                <li>{t('cloud.error.dataRepair.stepOpenIssue')}</li>
+              </ol>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Button variant="outline" size="sm" asChild>
+                  <a href={GITHUB_REPOSITORY_URL} target="_blank" rel="noreferrer">
+                    <ExternalLink className="h-4 w-4" />
+                    {t('cloud.error.dataRepair.openRepository')}
+                  </a>
+                </Button>
+                <Button variant="outline" size="sm" asChild>
+                  <a href={GITHUB_ISSUES_URL} target="_blank" rel="noreferrer">
+                    <ExternalLink className="h-4 w-4" />
+                    {t('cloud.error.dataRepair.openIssues')}
+                  </a>
+                </Button>
+              </div>
+            </div>
+          ) : null}
           <div className="mt-4 flex flex-wrap gap-2">
             <Button
               variant="outline"

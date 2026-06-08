@@ -95,14 +95,28 @@ function getRawErrorMessage(error: unknown): string {
   return String(error);
 }
 
-export function getLocalizedErrorMessage(error: unknown, t: TFunction): string {
+function getMessagesForResolution(error: unknown): string[] {
   const data = getErrorData(error);
   const backendMessage =
     isString(data?.backendMessage) && data.backendMessage ? data.backendMessage : '';
   const rawMessage = getRawErrorMessage(error);
-  const messageForResolution = rawMessage || backendMessage;
 
-  if (messageForResolution) {
+  return [rawMessage, backendMessage].filter((message, index, messages) => {
+    return Boolean(message) && messages.indexOf(message) === index;
+  });
+}
+
+export function isDataMigrationError(error: unknown): boolean {
+  return getMessagesForResolution(error).some((messageForResolution) => {
+    const [code] = messageForResolution.split('|');
+    return code === DATA_MIGRATION_ERROR_CODE;
+  });
+}
+
+export function getLocalizedErrorMessage(error: unknown, t: TFunction): string {
+  const messagesForResolution = getMessagesForResolution(error);
+
+  for (const messageForResolution of messagesForResolution) {
     const [code, hint] = messageForResolution.split('|');
     if (code === KEYCHAIN_ERROR_CODE) {
       return resolveKeychainMessage(hint, t);
@@ -114,7 +128,10 @@ export function getLocalizedErrorMessage(error: unknown, t: TFunction): string {
     if (applicationMessage) {
       return applicationMessage;
     }
-    return messageForResolution;
+  }
+
+  if (messagesForResolution.length > 0) {
+    return messagesForResolution[0];
   }
 
   return String(error);

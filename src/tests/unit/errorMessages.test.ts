@@ -1,6 +1,10 @@
 import type { TFunction } from 'i18next';
 import { describe, expect, it } from 'vitest';
-import { getErrorDetailsText, getLocalizedErrorMessage } from '@/shared/utils/errorMessages';
+import {
+  getErrorDetailsText,
+  getLocalizedErrorMessage,
+  isDataMigrationError,
+} from '@/shared/utils/errorMessages';
 
 const STORAGE_NOT_FOUND_MESSAGE =
   'Antigravity storage.json was not found. Open the target Antigravity app and sign in once, then try switching again.';
@@ -39,7 +43,7 @@ describe('getLocalizedErrorMessage', () => {
   it('localizes backend messages passed through ORPC data', () => {
     const message = getLocalizedErrorMessage(
       {
-        message: 'ERR_DATA_MIGRATION_FAILED|HINT_RELOGIN',
+        message: 'Internal server error',
         data: {
           backendMessage: 'ERR_DATA_MIGRATION_FAILED|HINT_RELOGIN',
         },
@@ -50,6 +54,19 @@ describe('getLocalizedErrorMessage', () => {
     expect(message).toBe(
       'Unable to decrypt legacy account data. Please re-login or re-add your accounts.',
     );
+  });
+
+  it('identifies data migration failures passed through ORPC data', () => {
+    expect(
+      isDataMigrationError({
+        message: 'Internal server error',
+        data: {
+          backendMessage: 'ERR_DATA_MIGRATION_FAILED|HINT_RELOGIN',
+        },
+      }),
+    ).toBe(true);
+
+    expect(isDataMigrationError(new Error('Other failure'))).toBe(false);
   });
 });
 

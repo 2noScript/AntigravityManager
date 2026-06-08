@@ -627,6 +627,9 @@ export class CloudAccountRepo {
             proxy_url: normalizedRow.proxyUrl ?? undefined,
           });
         } catch (rowError) {
+          if (isDataMigrationError(rowError)) {
+            throw rowError;
+          }
           logger.error(`Unexpected error processing row for account ${normalizedRow.id}`, rowError);
           continue;
         }

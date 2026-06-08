@@ -425,6 +425,20 @@ i18n
             },
             error: {
               loadFailed: 'Failed to load cloud accounts.',
+              dataRepair: {
+                title: 'Encrypted account data needs repair',
+                description:
+                  'The app could not decrypt local account data. This usually means the data was created with a different encryption key or the local data is corrupted.',
+                stepReLogin: 'Re-login or re-add the affected accounts first.',
+                stepMacPrivacy:
+                  'On macOS, check Keychain/privacy prompts. If the app is unsigned or was re-signed, sign it again, move it to /Applications, then reopen it.',
+                stepCheckGithub:
+                  'Check the GitHub repository README for the latest troubleshooting steps.',
+                stepOpenIssue:
+                  'Search GitHub Issues for this error before clearing local account data.',
+                openRepository: 'Open GitHub Repository',
+                openIssues: 'Open GitHub Issues',
+              },
             },
             toast: {
               syncSuccess: {
@@ -954,6 +968,18 @@ i18n
             },
             error: {
               loadFailed: '加载云账号失败。',
+              dataRepair: {
+                title: '加密账号数据需要修复',
+                description:
+                  '应用无法解密本地账号数据。通常是因为这些数据由另一把加密密钥创建，或本地数据已经损坏。',
+                stepReLogin: '先重新登录或重新添加受影响的账号。',
+                stepMacPrivacy:
+                  '在 macOS 上，检查钥匙串/隐私权限提示。如果应用未签名或重新签名过，请重新签名、移动到 /Applications 后再打开。',
+                stepCheckGithub: '查看 GitHub 仓库首页 README 中最新的排查步骤。',
+                stepOpenIssue: '清理本地账号数据前，先在 GitHub Issues 中搜索这个错误。',
+                openRepository: '打开 GitHub 仓库',
+                openIssues: '打开 GitHub Issues',
+              },
             },
             toast: {
               syncSuccess: {
@@ -1489,6 +1515,20 @@ i18n
             },
             error: {
               loadFailed: 'Не удалось загрузить аккаунты.',
+              dataRepair: {
+                title: 'Зашифрованные данные аккаунта требуют восстановления',
+                description:
+                  'Приложение не смогло расшифровать локальные данные аккаунта. Обычно это означает, что данные были созданы другим ключом шифрования или локальные данные повреждены.',
+                stepReLogin: 'Сначала войдите снова или заново добавьте затронутые аккаунты.',
+                stepMacPrivacy:
+                  'На macOS проверьте запросы Keychain/конфиденциальности. Если приложение не подписано или было переподписано, подпишите его снова, переместите в /Applications и откройте заново.',
+                stepCheckGithub:
+                  'Проверьте README в репозитории GitHub на наличие актуальных шагов диагностики.',
+                stepOpenIssue:
+                  'Перед очисткой локальных данных аккаунтов поищите эту ошибку в GitHub Issues.',
+                openRepository: 'Открыть репозиторий GitHub',
+                openIssues: 'Открыть GitHub Issues',
+              },
             },
             toast: {
               syncSuccess: {
