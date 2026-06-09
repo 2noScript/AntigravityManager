@@ -270,7 +270,7 @@ jobs:
       - name: Create flake update pull request
         uses: peter-evans/create-pull-request@v7
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GH_TOKEN }}
           base: main
           branch: chore/update-flake-${{ steps.release_tag.outputs.tag }}
           add-paths: flake.nix
