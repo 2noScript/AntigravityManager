@@ -15,6 +15,11 @@ import {
 import { logger } from '@/shared/logging/logger';
 import type { AntigravityAppTarget } from '@/modules/account/types';
 import { resolveAntigravityAppTarget } from '@/modules/account/types';
+import {
+  isSafeWindowsImageName,
+  isWindowsImageRunning,
+  killWindowsImageTree,
+} from '@/shared/platform/windowsProcess';
 
 const execAsync = promisify(exec);
 const PROCESS_STARTUP_TIMEOUT_MS = 6000;
@@ -50,6 +55,49 @@ function getProcessSearchNames(
   }
 
   return searchNames;
+}
+
+function getWindowsTargetImageNames(target?: AntigravityAppTarget | null): string[] {
+  const imageNames = new Set<string>();
+  const defaultImageName =
+    resolveAntigravityAppTarget(target) === 'ide' ? 'Antigravity IDE.exe' : 'Antigravity.exe';
+  imageNames.add(defaultImageName);
+
+  const executablePath = getAntigravityExecutablePath(target);
+  if (executablePath) {
+    const executableImageName = path.win32.basename(executablePath);
+    if (isSafeWindowsImageName(executableImageName)) {
+      imageNames.add(executableImageName);
+    }
+  }
+
+  return Array.from(imageNames).filter(isSafeWindowsImageName);
+}
+
+function isAnyWindowsTargetImageRunning(target?: AntigravityAppTarget | null): boolean | null {
+  let sawCommandFailure = false;
+  for (const imageName of getWindowsTargetImageNames(target)) {
+    const isRunning = isWindowsImageRunning(imageName);
+    if (isRunning === true) {
+      return true;
+    }
+    if (isRunning === null) {
+      sawCommandFailure = true;
+    }
+  }
+
+  return sawCommandFailure ? null : false;
+}
+
+function killWindowsTargetImages(target?: AntigravityAppTarget | null): boolean {
+  let killedAny = false;
+  for (const imageName of getWindowsTargetImageNames(target)) {
+    if (killWindowsImageTree(imageName)) {
+      killedAny = true;
+    }
+  }
+
+  return killedAny;
 }
 
 async function findAntigravityProcesses(
@@ -147,11 +195,10 @@ function isClosableTargetProcessCandidate(
 }
 
 async function hasClosableTargetProcess(target?: AntigravityAppTarget | null): Promise<boolean> {
-  const currentPid = process.pid;
-  const processes = await findAntigravityProcesses(target, true);
+  const processes = await findAntigravityProcesses(target);
 
   return processes.some((processInfo) => {
-    if (processInfo.pid === currentPid) {
+    if (processInfo.pid === process.pid) {
       return false;
     }
 
@@ -168,6 +215,29 @@ async function hasClosableTargetProcess(target?: AntigravityAppTarget | null): P
   });
 }
 
+async function findClosableTargetProcesses(
+  target?: AntigravityAppTarget | null,
+  includeAllProcesses = false,
+): Promise<ProcessInfo[]> {
+  const processes = await findAntigravityProcesses(target, includeAllProcesses);
+
+  return processes.filter((processInfo) => {
+    const candidate = mapProcessInfoToCandidate(processInfo);
+    const commandLine = candidate.commandLine;
+
+    if (processInfo.pid === process.pid) {
+      return false;
+    }
+    if (
+      commandLine.includes('Antigravity Manager') ||
+      commandLine.includes('antigravity-manager')
+    ) {
+      return false;
+    }
+    return isClosableTargetProcessCandidate(candidate, target);
+  });
+}
+
 /**
  * Checks if the Antigravity process is running.
  * Uses find-process package for robust cross-platform process detection.
@@ -175,6 +245,13 @@ async function hasClosableTargetProcess(target?: AntigravityAppTarget | null): P
  */
 export async function isProcessRunning(target?: AntigravityAppTarget | null): Promise<boolean> {
   try {
+    if (process.platform === 'win32') {
+      const isRunning = isAnyWindowsTargetImageRunning(target);
+      if (isRunning !== null) {
+        return isRunning;
+      }
+    }
+
     const currentPid = process.pid;
     const resolvedTarget = resolveAntigravityAppTarget(target);
     const processes = await findAntigravityProcesses(target);
@@ -241,24 +318,16 @@ export async function closeAntigravity(target?: AntigravityAppTarget | null): Pr
       }
     }
 
-    // Stage 2 & 3: Find and Kill remaining processes
-    const currentPid = process.pid;
-    const targetProcesses = (await findAntigravityProcesses(target, true)).filter((processInfo) => {
-      const candidate = mapProcessInfoToCandidate(processInfo);
-      const commandLine = candidate.commandLine;
+    if (platform === 'win32' && killWindowsTargetImages(target)) {
+      return;
+    }
 
-      // Exclude self
-      if (processInfo.pid === currentPid) {
-        return false;
-      }
-      if (
-        commandLine.includes('Antigravity Manager') ||
-        commandLine.includes('antigravity-manager')
-      ) {
-        return false;
-      }
-      return isClosableTargetProcessCandidate(candidate, target);
-    });
+    // Stage 2 & 3: Find and kill remaining processes. The broad all-process scan is expensive
+    // on Windows, so keep it as a fallback for custom executable names only.
+    let targetProcesses = await findClosableTargetProcesses(target);
+    if (targetProcesses.length === 0) {
+      targetProcesses = await findClosableTargetProcesses(target, true);
+    }
 
     if (targetProcesses.length === 0) {
       logger.info(`No ${appName} processes found running.`);
@@ -291,6 +360,17 @@ export async function _waitForProcessExit(
 ): Promise<void> {
   const startTime = Date.now();
   while (Date.now() - startTime < timeoutMs) {
+    if (process.platform === 'win32') {
+      const isRunning = isAnyWindowsTargetImageRunning(target);
+      if (isRunning === false) {
+        return;
+      }
+      if (isRunning === true) {
+        await new Promise((resolve) => setTimeout(resolve, pollInterval));
+        continue;
+      }
+    }
+
     if (!(await hasClosableTargetProcess(target))) {
       return;
     }

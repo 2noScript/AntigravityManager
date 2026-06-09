@@ -7,10 +7,13 @@ import type { UserInfo } from '@/modules/cloud-account/services/GoogleAPIService
 import { toSyncLocalAccountORPCError } from '@/modules/cloud-account/ipc/router';
 
 let mockData: Record<string, string>;
+let mockDataByDbPath: Record<string, Record<string, string>>;
+let activeMockDbPath = 'mock-db';
 let busyOnFirstGet = false;
 let getCallCount = 0;
 let runCalls: Array<{ sql: string; args: unknown[] }>;
 let getAntigravityDbPathsCalls: unknown[];
+let mockAntigravityDbPaths = ['mock-db'];
 interface MockOrm {
   select: () => {
     from: () => {
@@ -53,16 +56,19 @@ vi.mock('drizzle-orm', () => ({
 }));
 
 vi.mock('@/shared/persistence/database/dbConnection', () => ({
-  openDrizzleConnection: () => ({
-    raw: { close: vi.fn() },
-    orm: mockOrm,
-  }),
+  openDrizzleConnection: (dbPath: string) => {
+    activeMockDbPath = dbPath;
+    return {
+      raw: { close: vi.fn() },
+      orm: mockOrm,
+    };
+  },
 }));
 
 vi.mock('../../shared/platform/paths', () => ({
   getAntigravityDbPaths: (target?: unknown) => {
     getAntigravityDbPathsCalls.push(target);
-    return ['mock-db'];
+    return mockAntigravityDbPaths;
   },
   getCloudAccountsDbPath: () => 'mock-cloud-db',
   refreshAntigravityProcessCache: () => Promise.resolve(),
@@ -90,7 +96,11 @@ vi.mock('@/modules/cloud-account/persistence/antigravityCredentialStore', () => 
 
 describe('CloudAccountRepo.syncFromIde', () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     mockData = {};
+    mockDataByDbPath = {};
+    activeMockDbPath = 'mock-db';
+    mockAntigravityDbPaths = ['mock-db'];
     busyOnFirstGet = false;
     getCallCount = 0;
     runCalls = [];
@@ -108,7 +118,7 @@ describe('CloudAccountRepo.syncFromIde', () => {
                 throw error;
               }
               const key = condition?.__key ?? '';
-              const value = mockData[key];
+              const value = mockDataByDbPath[activeMockDbPath]?.[key] ?? mockData[key];
               if (value === undefined) {
                 return [];
               }
@@ -471,6 +481,35 @@ describe('CloudAccountRepo.syncFromIde', () => {
     expect(account?.email).toBe('retry@example.com');
   });
 
+  it('should continue to the next IDE database when an earlier existing path has no cloud token', async () => {
+    mockAntigravityDbPaths = ['empty-db', 'token-db'];
+    const accessToken = 'access-second-db';
+    const refreshToken = 'refresh-second-db';
+    mockDataByDbPath = {
+      'token-db': {
+        jetskiStateSync: 'unused',
+        jetskiStateSync_agentManagerInitState: 'unused',
+        jetskiStateSyncAgentManagerInitState: 'unused',
+        'jetskiStateSync.agentManagerInitState': Buffer.from(
+          ProtobufUtils.createOAuthTokenInfo(accessToken, refreshToken, 1700000000),
+        ).toString('base64'),
+      },
+    };
+
+    const { GoogleAPIService } = await import('@/modules/cloud-account/services/GoogleAPIService');
+    vi.mocked(GoogleAPIService.getUserInfo).mockResolvedValue(
+      createMockUserInfo('second-db@example.com', 'Second Db User'),
+    );
+
+    vi.spyOn(CloudAccountRepo, 'getAccounts').mockResolvedValue([]);
+    vi.spyOn(CloudAccountRepo, 'addAccount').mockResolvedValue();
+
+    const account = await CloudAccountRepo.syncFromIde('ide');
+
+    expect(account?.email).toBe('second-db@example.com');
+    expect(GoogleAPIService.getUserInfo).toHaveBeenCalledWith(accessToken);
+  });
+
   it('should refresh the IDE token when user info rejects the stored access token', async () => {
     const staleAccessToken = 'stale-access';
     const refreshToken = 'refresh-for-resync';
@@ -484,9 +523,7 @@ describe('CloudAccountRepo.syncFromIde', () => {
     const { GoogleAPIService } = await import('@/modules/cloud-account/services/GoogleAPIService');
     vi.mocked(GoogleAPIService.getUserInfo)
       .mockRejectedValueOnce(
-        new Error(
-          'Failed to fetch user info: {"error":{"code":401,"status":"UNAUTHENTICATED"}}',
-        ),
+        new Error('Failed to fetch user info: {"error":{"code":401,"status":"UNAUTHENTICATED"}}'),
       )
       .mockResolvedValueOnce(createMockUserInfo('refreshed@example.com', 'Refreshed User'));
     vi.mocked(GoogleAPIService.refreshAccessToken).mockResolvedValue({
@@ -674,6 +711,17 @@ describe('CloudAccountRepo.syncFromIde', () => {
 });
 
 describe('syncLocalAccount ORPC error mapping', () => {
+  it('maps missing IDE account guidance to a bad request error regardless of message casing', () => {
+    const error = toSyncLocalAccountORPCError(
+      new Error(
+        'No cloud account found in IDE. Please login to a Google account in Antigravity IDE first.',
+      ),
+    );
+
+    expect(error.code).toBe('BAD_REQUEST');
+    expect(error.status).toBe(400);
+  });
+
   it('preserves re-login guidance as an actionable unauthorized error', () => {
     const error = toSyncLocalAccountORPCError(
       new Error(
@@ -701,6 +749,7 @@ describe('cloud switch fail-fast path', () => {
     const recordSwitchFailureMock = vi.fn();
     const recordSwitchSuccessMock = vi.fn();
     const updateTokenMock = vi.fn(async () => undefined);
+    const refreshAntigravityProcessCacheMock = vi.fn(async () => undefined);
     const refreshAccessTokenMock = vi.fn(async () => ({
       access_token: 'refreshed-access',
       expires_in: 3600,
@@ -776,7 +825,7 @@ describe('cloud switch fail-fast path', () => {
 
     vi.doMock('../../shared/platform/paths', () => ({
       getAntigravityDbPaths: () => [],
-      refreshAntigravityProcessCache: () => Promise.resolve(),
+      refreshAntigravityProcessCache: refreshAntigravityProcessCacheMock,
     }));
 
     vi.doMock('../../shared/logging/logger', () => ({
@@ -807,6 +856,7 @@ describe('cloud switch fail-fast path', () => {
     await expect(switchCloudAccount('acc-1')).rejects.toThrow('Switch failed: inject_failed');
 
     expect(refreshAccessTokenMock).toHaveBeenCalledWith('refresh', undefined, undefined);
+    expect(refreshAntigravityProcessCacheMock).toHaveBeenCalledTimes(1);
     expect(updateTokenMock).toHaveBeenCalledWith(
       'acc-1',
       expect.objectContaining({
@@ -884,6 +934,113 @@ describe('cloud oauth client key backfill', () => {
         }),
         setSetting: vi.fn(),
       },
+    }));
+
+    vi.doMock('@/modules/cloud-account/services/GoogleAPIService', () => ({
+      GoogleAPIService: {
+        setActiveOAuthClientKey: vi.fn(),
+        getActiveOAuthClientKey: vi.fn(() => 'custom_a'),
+      },
+    }));
+
+    vi.doMock('../../shared/logging/logger', () => ({
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn(),
+      },
+    }));
+    vi.doMock('@/modules/app-shell/ipc/tray/handler', () => ({ updateTrayMenu: vi.fn() }));
+    vi.doMock('@/modules/identity-profile/ipc/handler', () => ({
+      ensureGlobalOriginalFromCurrentStorage: vi.fn(),
+      generateDeviceProfile: vi.fn(),
+      getStorageDirectoryPath: vi.fn(() => ''),
+      isIdentityProfileApplyEnabled: vi.fn(() => false),
+      loadGlobalOriginalProfile: vi.fn(),
+      readCurrentDeviceProfile: vi.fn(),
+      saveGlobalOriginalProfile: vi.fn(),
+    }));
+    vi.doMock('../../shared/platform/paths', () => ({
+      getAntigravityDbPaths: () => [],
+      refreshAntigravityProcessCache: () => Promise.resolve(),
+    }));
+    vi.doMock('@/modules/antigravity-runtime/switch/switchGuard', () => ({
+      runWithSwitchGuard: async (_owner: string, fn: () => Promise<void>) => fn(),
+    }));
+    vi.doMock('@/modules/antigravity-runtime/switch/switchFlow', () => ({
+      executeSwitchFlow: vi.fn(),
+    }));
+    vi.doMock('electron', () => ({ shell: { openExternal: vi.fn() } }));
+
+    const { listCloudAccounts } = await import('@/modules/cloud-account/ipc/handler');
+    const listedAccounts = await listCloudAccounts();
+
+    expect(listedAccounts.find((account) => account.id === 'acc-1')?.is_active_classic).toBe(false);
+    expect(listedAccounts.find((account) => account.id === 'acc-2')?.is_active_classic).toBe(true);
+  });
+
+  it('keeps Classic credential-store active target when SQLite still reports previous email', async () => {
+    const accounts = [
+      {
+        id: 'acc-1',
+        provider: 'google' as const,
+        email: 'previous@test.dev',
+        token: {
+          access_token: 'access-1',
+          refresh_token: 'refresh-1',
+          expires_in: 3600,
+          expiry_timestamp: Math.floor(Date.now() / 1000) + 3600,
+          token_type: 'Bearer',
+          email: 'previous@test.dev',
+          oauth_client_key: 'custom_a',
+        },
+        created_at: Math.floor(Date.now() / 1000),
+        last_used: Math.floor(Date.now() / 1000),
+      },
+      {
+        id: 'acc-2',
+        provider: 'google' as const,
+        email: 'target@test.dev',
+        token: {
+          access_token: 'access-2',
+          refresh_token: 'refresh-2',
+          expires_in: 3600,
+          expiry_timestamp: Math.floor(Date.now() / 1000) + 3600,
+          token_type: 'Bearer',
+          email: 'target@test.dev',
+          oauth_client_key: 'custom_a',
+        },
+        created_at: Math.floor(Date.now() / 1000),
+        last_used: Math.floor(Date.now() / 1000),
+      },
+    ];
+
+    vi.doMock('@/modules/cloud-account/persistence/cloudHandler', () => ({
+      CloudAccountRepo: {
+        getAccounts: vi.fn(async () => accounts),
+        updateToken: vi.fn(),
+        shouldInjectTokenIntoCredentialStore: vi.fn(() => true),
+        getActiveAccountIdForTarget: vi.fn((target: string) =>
+          target === 'classic' ? 'acc-2' : '',
+        ),
+        getSetting: vi.fn((key: string, defaultValue: unknown) => {
+          if (key === 'oauth_client_key_backfill_v1_done') {
+            return true;
+          }
+          return defaultValue;
+        }),
+        setSetting: vi.fn(),
+      },
+    }));
+
+    vi.doMock('@/shared/persistence/database/handler', () => ({
+      getCurrentAccountInfo: vi.fn((target: string) => {
+        if (target === 'classic') {
+          return { isAuthenticated: true, email: 'previous@test.dev' };
+        }
+        return { isAuthenticated: false, email: '' };
+      }),
     }));
 
     vi.doMock('@/modules/cloud-account/services/GoogleAPIService', () => ({

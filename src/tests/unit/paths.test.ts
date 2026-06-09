@@ -610,7 +610,57 @@ describe('Path Utilities', () => {
     expect(paths.getAntigravityExecutablePath('ide')).toBe(executablePath);
   });
 
-  it('should scan all processes so configured custom executable names can refresh cache', async () => {
+  it('should avoid all-process scans during normal process cache refresh', async () => {
+    vi.resetModules();
+    setPlatform('win32');
+
+    childProcessMock.execSync.mockReturnValue(`
+CommandLine="C:\\Users\\Alice\\AppData\\Local\\Programs\\Antigravity\\Antigravity.exe" "antigravity://oauth-success/"
+ExecutablePath=C:\\Users\\Alice\\AppData\\Local\\Programs\\Antigravity\\Antigravity.exe
+ProcessId=12345
+`);
+
+    const paths = await import('../../shared/platform/paths');
+    await paths.refreshAntigravityProcessCache('classic');
+
+    expect(findProcessMock).not.toHaveBeenCalledWith(
+      'name',
+      '',
+      expect.objectContaining({ strict: false }),
+    );
+  });
+
+  it('should use Windows process image queries for normal process cache refresh', async () => {
+    vi.resetModules();
+    setPlatform('win32');
+
+    childProcessMock.execSync.mockReturnValue(`
+CommandLine="C:\\Users\\Alice\\AppData\\Local\\Programs\\Antigravity\\Antigravity.exe" --user-data-dir "D:\\Profiles\\AG"
+ExecutablePath=C:\\Users\\Alice\\AppData\\Local\\Programs\\Antigravity\\Antigravity.exe
+ProcessId=12345
+`);
+    vi.spyOn(fs, 'existsSync').mockImplementation((candidatePath) => {
+      return String(candidatePath) === 'D:\\Profiles\\AG';
+    });
+
+    const paths = await import('../../shared/platform/paths');
+    await paths.refreshAntigravityProcessCache('classic');
+
+    expect(childProcessMock.execSync).toHaveBeenCalledWith(
+      expect.stringContaining('wmic process where "name='),
+      expect.objectContaining({ encoding: 'utf-8' }),
+    );
+    expect(findProcessMock).not.toHaveBeenCalled();
+    expect(paths.getAntigravityArgsFromRunningProcess('classic')).toEqual([
+      [
+        'C:\\Users\\Alice\\AppData\\Local\\Programs\\Antigravity\\Antigravity.exe',
+        '--user-data-dir',
+        'D:\\Profiles\\AG',
+      ],
+    ]);
+  });
+
+  it('should support all-process fallback scans for configured custom executable names', async () => {
     vi.resetModules();
     setPlatform('win32');
     process.env.APPDATA = 'C:\\Users\\Alice\\AppData\\Roaming';
@@ -648,7 +698,7 @@ describe('Path Utilities', () => {
     });
 
     const paths = await import('../../shared/platform/paths');
-    await paths.refreshAntigravityProcessCache('classic');
+    await paths.refreshAntigravityProcessCache('classic', { includeAllProcesses: true });
 
     expect(findProcessMock).toHaveBeenCalledWith(
       'name',

@@ -21,6 +21,7 @@ export interface SwitchFlowOptions {
   appTarget?: AntigravityAppTarget;
   applyFingerprint: boolean;
   processExitTimeoutMs: number;
+  skipRefreshProcessCache?: boolean;
   performSwitch: () => Promise<void>;
 }
 
@@ -59,8 +60,15 @@ function toSwitchFailureReason(stage: string, error: unknown): SwitchFailureReas
 }
 
 export async function executeSwitchFlow(options: SwitchFlowOptions): Promise<void> {
-  const { scope, appTarget, targetProfile, applyFingerprint, processExitTimeoutMs, performSwitch } =
-    options;
+  const {
+    scope,
+    appTarget,
+    targetProfile,
+    applyFingerprint,
+    processExitTimeoutMs,
+    skipRefreshProcessCache = false,
+    performSwitch,
+  } = options;
 
   let failureReason: SwitchFailureReason | null = null;
   let waitExitTimedOut = false;
@@ -74,9 +82,11 @@ export async function executeSwitchFlow(options: SwitchFlowOptions): Promise<voi
     },
     async (trace) => {
       try {
-        await trace.phase('refreshProcessCacheMs', async () => {
-          await refreshAntigravityProcessCache(appTarget);
-        });
+        if (!skipRefreshProcessCache) {
+          await trace.phase('refreshProcessCacheMs', async () => {
+            await refreshAntigravityProcessCache(appTarget);
+          });
+        }
         await trace.phase('closeMs', async () => {
           await closeAntigravity(appTarget);
         });

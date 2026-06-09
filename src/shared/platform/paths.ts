@@ -5,6 +5,10 @@ import { execSync } from 'child_process';
 import findProcess, { type ProcessInfo } from 'find-process';
 import type { AntigravityAppTarget } from '@/modules/account/types';
 import { resolveAntigravityAppTarget } from '@/modules/account/types';
+import {
+  isSafeWindowsImageName,
+  queryWindowsProcessesByImageName,
+} from '@/shared/platform/windowsProcess';
 
 type PathApi = Pick<typeof path, 'dirname' | 'join' | 'normalize' | 'resolve'>;
 
@@ -409,6 +413,10 @@ let runningProcessCache: {
   processes: RunningAntigravityProcess[];
 } | null = null;
 
+interface RefreshProcessCacheOptions {
+  includeAllProcesses?: boolean;
+}
+
 function processInfoToRunningProcess(processInfo: ProcessInfo): RunningAntigravityProcess {
   const commandLine = processInfo.cmd || processInfo.name || '';
   return {
@@ -419,15 +427,54 @@ function processInfoToRunningProcess(processInfo: ProcessInfo): RunningAntigravi
   };
 }
 
-function getProcessSearchNames(target?: AntigravityAppTarget | null): string[] {
+function getProcessSearchNames(
+  target?: AntigravityAppTarget | null,
+  includeAllProcesses = false,
+): string[] {
   const searchNames =
     resolveAntigravityAppTarget(target) === 'ide'
       ? ['Antigravity IDE', 'antigravity-ide', 'Antigravity', 'antigravity']
       : ['Antigravity', 'antigravity'];
 
-  searchNames.push('');
+  if (includeAllProcesses) {
+    searchNames.push('');
+  }
 
   return searchNames;
+}
+
+function getWindowsProcessImageNames(target?: AntigravityAppTarget | null): string[] {
+  const imageNames = new Set<string>();
+  const appName = getAntigravityAppFolderName(target);
+  imageNames.add(`${appName}.exe`);
+
+  const configuredExecutablePath = getConfiguredAntigravityExecutablePath(target, false);
+  if (configuredExecutablePath) {
+    imageNames.add(path.win32.basename(configuredExecutablePath));
+  }
+
+  return Array.from(imageNames).filter(isSafeWindowsImageName);
+}
+
+function queryWindowsTargetProcesses(
+  target?: AntigravityAppTarget | null,
+): RunningAntigravityProcess[] | null {
+  const processMap = new Map<number, RunningAntigravityProcess>();
+
+  for (const imageName of getWindowsProcessImageNames(target)) {
+    const processes = queryWindowsProcessesByImageName(imageName);
+    if (!processes) {
+      return null;
+    }
+
+    for (const processItem of processes) {
+      if (isTargetAntigravityProcessCandidate(processItem, target)) {
+        processMap.set(processItem.pid, processItem);
+      }
+    }
+  }
+
+  return Array.from(processMap.values());
 }
 
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
@@ -450,11 +497,26 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
 
 export async function refreshAntigravityProcessCache(
   target?: AntigravityAppTarget | null,
+  options: RefreshProcessCacheOptions = {},
 ): Promise<void> {
   const resolvedTarget = resolveAntigravityAppTarget(target);
+
+  if (process.platform === 'win32' && !options.includeAllProcesses) {
+    const windowsProcesses = queryWindowsTargetProcesses(target);
+    if (windowsProcesses && windowsProcesses.length > 0) {
+      runningProcessCache = {
+        platform: process.platform,
+        target: resolvedTarget,
+        checkedAt: Date.now(),
+        processes: windowsProcesses,
+      };
+      return;
+    }
+  }
+
   const processMap = new Map<number, RunningAntigravityProcess>();
 
-  for (const searchName of getProcessSearchNames(target)) {
+  for (const searchName of getProcessSearchNames(target, options.includeAllProcesses)) {
     try {
       const matches = await withTimeout(
         findProcess('name', searchName, {

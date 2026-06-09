@@ -92,6 +92,7 @@ import {
   isProcessRunning,
   closeAntigravity,
   startAntigravity,
+  _waitForProcessExit,
 } from '@/modules/antigravity-runtime/ipc/handler';
 import findProcess from 'find-process';
 import {
@@ -104,12 +105,32 @@ describe('Process Handler', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    childProcessMock.execSync.mockImplementation(() => {
+      throw new Error('process command unavailable');
+    });
     childProcessMock.spawn.mockReturnValue({
       unref: vi.fn(),
     });
   });
 
   describe('isProcessRunning', () => {
+    it('should use a Windows image-name check for Classic running state', async () => {
+      Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
+      Object.defineProperty(process, 'pid', { value: 1000, configurable: true });
+      childProcessMock.execSync.mockReturnValue(
+        '"Image Name","PID","Session Name","Session#","Mem Usage"\r\n"Antigravity.exe","12345","Console","1","100 K"\r\n',
+      );
+
+      const result = await isProcessRunning('classic');
+
+      expect(result).toBe(true);
+      expect(childProcessMock.execSync).toHaveBeenCalledWith(
+        'tasklist /FI "IMAGENAME eq Antigravity.exe" /FO CSV /NH',
+        expect.objectContaining({ encoding: 'utf-8' }),
+      );
+      expect(mockFindProcess).not.toHaveBeenCalled();
+    });
+
     it('should return true when Antigravity main process is found on macOS', async () => {
       Object.defineProperty(process, 'platform', { value: 'darwin', configurable: true });
       Object.defineProperty(process, 'pid', { value: 1000, configurable: true });
@@ -288,6 +309,74 @@ describe('Process Handler', () => {
   });
 
   describe('closeAntigravity', () => {
+    it('should use taskkill for default Windows Classic close without process scanning', async () => {
+      Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
+      Object.defineProperty(process, 'pid', { value: 1000, configurable: true });
+      childProcessMock.execSync.mockReturnValue('');
+      const killSpy = vi.spyOn(process, 'kill').mockImplementation(() => true);
+
+      await closeAntigravity('classic');
+
+      expect(childProcessMock.execSync).toHaveBeenCalledWith(
+        'taskkill /F /T /IM "Antigravity.exe"',
+        expect.objectContaining({ stdio: 'ignore' }),
+      );
+      expect(mockFindProcess).not.toHaveBeenCalled();
+      expect(killSpy).not.toHaveBeenCalled();
+    });
+
+    it('should not fall back to process scanning when taskkill fails after closing the Windows image', async () => {
+      Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
+      Object.defineProperty(process, 'pid', { value: 1000, configurable: true });
+      childProcessMock.execSync.mockImplementation((command: string) => {
+        if (command.startsWith('taskkill')) {
+          throw new Error('taskkill timeout');
+        }
+        if (command.startsWith('tasklist')) {
+          return 'INFO: No tasks are running which match the specified criteria.';
+        }
+        return '';
+      });
+
+      await closeAntigravity('classic');
+
+      expect(childProcessMock.execSync).toHaveBeenCalledWith(
+        'taskkill /F /T /IM "Antigravity.exe"',
+        expect.objectContaining({ stdio: 'ignore' }),
+      );
+      expect(childProcessMock.execSync).toHaveBeenCalledWith(
+        'tasklist /FI "IMAGENAME eq Antigravity.exe" /FO CSV /NH',
+        expect.objectContaining({ encoding: 'utf-8' }),
+      );
+      expect(mockFindProcess).not.toHaveBeenCalled();
+    });
+
+    it('should avoid all-process scans when named target processes are found', async () => {
+      Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
+      Object.defineProperty(process, 'pid', { value: 1000, configurable: true });
+      const killSpy = vi.spyOn(process, 'kill').mockImplementation(() => true);
+
+      mockFindProcess.mockImplementation(async (_type, searchName) => {
+        if (searchName === 'Antigravity') {
+          return [
+            {
+              pid: 12345,
+              name: 'Antigravity.exe',
+              bin: 'C:\\Program Files\\Antigravity\\Antigravity.exe',
+              cmd: '"C:\\Program Files\\Antigravity\\Antigravity.exe"',
+            },
+          ];
+        }
+
+        return [];
+      });
+
+      await closeAntigravity('classic');
+
+      expect(mockFindProcess).not.toHaveBeenCalledWith('name', '', false);
+      expect(killSpy).toHaveBeenCalledWith(12345, 'SIGKILL');
+    });
+
     it('should include helper process when it exactly matches configured Classic executable path', async () => {
       Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
       Object.defineProperty(process, 'pid', { value: 1000, configurable: true });
@@ -368,6 +457,34 @@ describe('Process Handler', () => {
 
       expect(mockFindProcess).toHaveBeenCalledWith('name', '', false);
       expect(killSpy).toHaveBeenCalledWith(12345, 'SIGKILL');
+    });
+  });
+
+  describe('_waitForProcessExit', () => {
+    it('should use tasklist for default Windows Classic wait checks', async () => {
+      Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
+      Object.defineProperty(process, 'pid', { value: 1000, configurable: true });
+      childProcessMock.execSync.mockReturnValue(
+        'INFO: No tasks are running which match the specified criteria.',
+      );
+
+      await _waitForProcessExit(1, 1, 'classic');
+
+      expect(childProcessMock.execSync).toHaveBeenCalledWith(
+        'tasklist /FI "IMAGENAME eq Antigravity.exe" /FO CSV /NH',
+        expect.objectContaining({ encoding: 'utf-8' }),
+      );
+      expect(mockFindProcess).not.toHaveBeenCalled();
+    });
+
+    it('should avoid all-process scans while polling for process exit', async () => {
+      Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
+      Object.defineProperty(process, 'pid', { value: 1000, configurable: true });
+      mockFindProcess.mockResolvedValue([]);
+
+      await _waitForProcessExit(1, 1, 'classic');
+
+      expect(mockFindProcess).not.toHaveBeenCalledWith('name', '', false);
     });
   });
 

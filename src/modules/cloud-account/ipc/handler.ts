@@ -374,10 +374,11 @@ export async function listCloudAccounts(): Promise<CloudAccount[]> {
   } catch (err) {
     logger.warn('Failed to read current classic account info during listing', err);
   }
-  let activeClassicAccountId = '';
-  if (!classicEmail && CloudAccountRepo.shouldInjectTokenIntoCredentialStore('classic')) {
-    activeClassicAccountId = CloudAccountRepo.getActiveAccountIdForTarget('classic');
-  }
+  const classicUsesCredentialStore =
+    CloudAccountRepo.shouldInjectTokenIntoCredentialStore('classic');
+  const activeClassicAccountId = classicUsesCredentialStore
+    ? CloudAccountRepo.getActiveAccountIdForTarget('classic')
+    : '';
   try {
     const ideInfo = getCurrentAccountInfo('ide');
     if (ideInfo.isAuthenticated) {
@@ -391,8 +392,9 @@ export async function listCloudAccounts(): Promise<CloudAccount[]> {
   return accounts.map((account) => {
     const accountEmail = normalizeAccountEmail(account.email);
     const isClassicActive =
-      classicEmail === accountEmail ||
-      (!!activeClassicAccountId && activeClassicAccountId === account.id);
+      classicUsesCredentialStore && activeClassicAccountId
+        ? activeClassicAccountId === account.id
+        : classicEmail === accountEmail;
     const isIdeActive =
       ideEmail === accountEmail || (!!activeIdeAccountId && activeIdeAccountId === account.id);
     return {
@@ -632,6 +634,7 @@ export async function switchCloudAccount(
         targetProfile: account.device_profile || null,
         applyFingerprint: isIdentityProfileApplyEnabled(),
         processExitTimeoutMs: 10000,
+        skipRefreshProcessCache: true,
         performSwitch: async () => {
           const injectionMode = CloudAccountRepo.shouldInjectTokenIntoCredentialStore(appTarget)
             ? 'credential-store'
