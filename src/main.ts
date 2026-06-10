@@ -9,7 +9,6 @@ import { EnvHttpProxyAgent, setGlobalDispatcher } from 'undici';
 import { ipcMain } from 'electron/main';
 import { ipcContext } from '@/ipc/context';
 import { IPC_CHANNELS } from './shared/constants';
-import { updateElectronApp, UpdateSourceType } from 'update-electron-app';
 import { logger } from './shared/logging/logger';
 import {
   getExpectedInstallRoot,
@@ -30,6 +29,15 @@ import { ConfigManager } from '@/modules/config/ipc/manager';
 import { AppConfig } from '@/modules/config/types';
 import { isAutoStartLaunch, syncAutoStart } from '@/modules/antigravity-runtime/utils/autoStart';
 import { safeStringifyPacket } from './shared/security/sensitiveDataMasking';
+import {
+  checkManualUpdate,
+  getManualUpdateSnooze,
+  isManualUpdateForceEnabled,
+  isManualUpdateMockEnabled,
+  snoozeManualUpdate,
+} from '@/modules/app-shell/update/manualUpdateChecker';
+import { isManualUpdateSnoozed } from '@/modules/app-shell/update/manualUpdatePolicy';
+import type { ManualUpdateInfo } from '@/modules/app-shell/update/types';
 
 const packetLogPath = path.join(app.getPath('userData'), 'orpc_packets.log');
 
@@ -108,6 +116,9 @@ let isQuitting = false;
 let startupConfig: AppConfig | null = null;
 let shouldStartHidden = false;
 let hasShownInstallNotice = false;
+let pendingManualUpdate: ManualUpdateInfo | null = null;
+let isManualUpdateRendererReady = false;
+const notifiedManualUpdateVersions = new Set<string>();
 
 function isRunningFromExpectedInstallDir() {
   return isRunningFromExpectedInstallDirUtil({
@@ -163,6 +174,86 @@ function showWindowsInstallNoticeIfNeeded() {
     }
   });
 }
+
+function emitManualUpdateNotification(update: ManualUpdateInfo, { force = false } = {}) {
+  if (!force && notifiedManualUpdateVersions.has(update.version)) {
+    return;
+  }
+
+  if (
+    !isManualUpdateRendererReady ||
+    !globalMainWindow ||
+    globalMainWindow.isDestroyed() ||
+    !globalMainWindow.isVisible()
+  ) {
+    pendingManualUpdate = update;
+    return;
+  }
+
+  globalMainWindow.webContents.send(IPC_CHANNELS.MANUAL_UPDATE_AVAILABLE, update);
+  notifiedManualUpdateVersions.add(update.version);
+}
+
+function flushPendingManualUpdateNotification() {
+  if (!pendingManualUpdate) {
+    return;
+  }
+
+  if (
+    !isManualUpdateRendererReady ||
+    !globalMainWindow ||
+    globalMainWindow.isDestroyed() ||
+    !globalMainWindow.isVisible()
+  ) {
+    return;
+  }
+
+  const update = pendingManualUpdate;
+  pendingManualUpdate = null;
+  emitManualUpdateNotification(update);
+}
+
+function isTrustedReleaseUrl(url: string): boolean {
+  try {
+    const parsedUrl = new URL(url);
+    return (
+      parsedUrl.protocol === 'https:' &&
+      parsedUrl.hostname === 'github.com' &&
+      parsedUrl.pathname.startsWith('/Draculabo/AntigravityManager/releases/')
+    );
+  } catch {
+    return false;
+  }
+}
+
+ipcMain.handle(IPC_CHANNELS.CHECK_FOR_UPDATES, async () => {
+  const result = await checkManualUpdate(app.getVersion());
+  if (result.status === 'available') {
+    emitManualUpdateNotification(result.update, { force: true });
+  }
+
+  return result;
+});
+
+ipcMain.on(IPC_CHANNELS.MANUAL_UPDATE_RENDERER_READY, () => {
+  isManualUpdateRendererReady = true;
+  flushPendingManualUpdateNotification();
+});
+
+ipcMain.handle(IPC_CHANNELS.DISMISS_MANUAL_UPDATE, async (_event, version: unknown) => {
+  if (typeof version === 'string' && version.trim()) {
+    snoozeManualUpdate(version);
+  }
+});
+
+ipcMain.handle(IPC_CHANNELS.OPEN_EXTERNAL_URL, async (_event, url: unknown) => {
+  if (typeof url !== 'string' || !isTrustedReleaseUrl(url)) {
+    logger.warn(`Blocked untrusted external URL request: ${String(url)}`);
+    return;
+  }
+
+  await shell.openExternal(url);
+});
 
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
 
@@ -271,7 +362,7 @@ function createWindow({ startHidden }: { startHidden: boolean }) {
             logger.info(`createWindow: Vite server ready after ${i * delay}ms`);
             return true;
           }
-        } catch (e) {
+        } catch {
           // Server not ready yet
         }
         await new Promise((resolve) => setTimeout(resolve, delay));
@@ -317,8 +408,16 @@ function createWindow({ startHidden }: { startHidden: boolean }) {
     globalMainWindow = null;
   });
 
+  mainWindow.on('show', () => {
+    flushPendingManualUpdateNotification();
+  });
+
   mainWindow.webContents.on('render-process-gone', (event, details) => {
     logger.error('Renderer process gone:', details);
+  });
+
+  mainWindow.webContents.on('did-start-loading', () => {
+    isManualUpdateRendererReady = false;
   });
 
   mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
@@ -336,6 +435,7 @@ function createWindow({ startHidden }: { startHidden: boolean }) {
 
   mainWindow.on('focus', () => {
     CloudMonitorService.handleAppFocus();
+    flushPendingManualUpdateNotification();
   });
 }
 
@@ -348,7 +448,7 @@ app.on('before-quit', () => {
   logger.info('App before-quit event triggered - isQuitting set to true');
 });
 
-app.on('will-quit', (event) => {
+app.on('will-quit', () => {
   logger.info('App will quit event triggered');
   try {
     destroyTray();
@@ -371,13 +471,54 @@ async function installExtensions() {
   }
 }
 */
-function checkForUpdates() {
-  updateElectronApp({
-    updateSource: {
-      type: UpdateSourceType.ElectronPublicUpdateService,
-      repo: 'Draculabo/AntigravityManager',
-    },
-  });
+async function checkForUpdates() {
+  const isMockingManualUpdate = isManualUpdateMockEnabled();
+  const isForcingManualUpdate = isManualUpdateForceEnabled();
+  if (!app.isPackaged && !isMockingManualUpdate && !isForcingManualUpdate) {
+    logger.info('Update: Skipping startup update check in development');
+    return;
+  }
+
+  if (process.platform === 'win32' && !isMockingManualUpdate && !isForcingManualUpdate) {
+    try {
+      const { updateElectronApp, UpdateSourceType } = await import('update-electron-app');
+      updateElectronApp({
+        updateSource: {
+          type: UpdateSourceType.ElectronPublicUpdateService,
+          repo: 'Draculabo/AntigravityManager',
+        },
+      });
+    } catch (error) {
+      logger.error('Update: Failed to initialize Windows auto updater', error);
+    }
+    return;
+  }
+
+  if (
+    process.platform !== 'darwin' &&
+    process.platform !== 'linux' &&
+    !isMockingManualUpdate &&
+    !isForcingManualUpdate
+  ) {
+    logger.info(`Update: No startup update check for platform ${process.platform}`);
+    return;
+  }
+
+  const result = await checkManualUpdate(app.getVersion());
+  if (result.status !== 'available') {
+    if (result.status === 'error') {
+      logger.warn(`Update: Manual startup check failed: ${result.message}`);
+    }
+    return;
+  }
+
+  const snooze = getManualUpdateSnooze();
+  if (isManualUpdateSnoozed(snooze, result.update.version)) {
+    logger.info(`Update: Manual update ${result.update.version} is snoozed`);
+    return;
+  }
+
+  emitManualUpdateNotification(result.update);
 }
 
 async function setupORPC() {
@@ -391,7 +532,7 @@ async function setupORPC() {
         const data = msgEvent.data;
 
         logPacket(data);
-      } catch (e) {
+      } catch {
         logger.debug('[RAW ORPC MSG] (unparseable)', msgEvent.data);
       }
     });

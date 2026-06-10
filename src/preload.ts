@@ -17,7 +17,7 @@ try {
     const config = JSON.parse(content);
     sentryEnabled = config.error_reporting_enabled === true;
   }
-} catch (e) {
+} catch {
   // console.error('Preload: Failed to read config', e);
 }
 
@@ -45,5 +45,20 @@ contextBridge.exposeInMainWorld('electron', {
   },
   changeLanguage: (lang: string) => {
     ipcRenderer.send(IPC_CHANNELS.CHANGE_LANGUAGE, lang);
+  },
+  onManualUpdateAvailable: (callback: (update: ManualUpdateInfo) => void) => {
+    const handler = (_event: any, update: ManualUpdateInfo) => callback(update);
+    ipcRenderer.on(IPC_CHANNELS.MANUAL_UPDATE_AVAILABLE, handler);
+    ipcRenderer.send(IPC_CHANNELS.MANUAL_UPDATE_RENDERER_READY);
+    return () => ipcRenderer.off(IPC_CHANNELS.MANUAL_UPDATE_AVAILABLE, handler);
+  },
+  checkForUpdates: () => {
+    return ipcRenderer.invoke(IPC_CHANNELS.CHECK_FOR_UPDATES);
+  },
+  dismissManualUpdate: (version: string) => {
+    return ipcRenderer.invoke(IPC_CHANNELS.DISMISS_MANUAL_UPDATE, version);
+  },
+  openExternalUrl: (url: string) => {
+    return ipcRenderer.invoke(IPC_CHANNELS.OPEN_EXTERNAL_URL, url);
   },
 });

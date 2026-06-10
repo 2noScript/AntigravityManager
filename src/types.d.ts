@@ -5,11 +5,39 @@ declare global {
   const MAIN_WINDOW_VITE_DEV_SERVER_URL: string;
   const MAIN_WINDOW_VITE_NAME: string;
 
+  interface ManualUpdateInfo {
+    version: string;
+    tagName: string;
+    releaseName: string;
+    releaseUrl: string;
+    platform: 'darwin' | 'linux';
+  }
+
+  type ManualUpdateCheckResult =
+    | {
+        status: 'available';
+        update: ManualUpdateInfo;
+      }
+    | {
+        status: 'up-to-date';
+      }
+    | {
+        status: 'unsupported';
+      }
+    | {
+        status: 'error';
+        message: string;
+      };
+
   interface Window {
     electron: {
       SENTRY_ENABLED: boolean;
       onGoogleAuthCode: (callback: (code: string) => void) => () => void;
       changeLanguage: (lang: string) => void;
+      onManualUpdateAvailable: (callback: (update: ManualUpdateInfo) => void) => () => void;
+      checkForUpdates: () => Promise<ManualUpdateCheckResult>;
+      dismissManualUpdate: (version: string) => Promise<void>;
+      openExternalUrl: (url: string) => Promise<void>;
     };
   }
 }
