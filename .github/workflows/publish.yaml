@@ -221,6 +221,20 @@ jobs:
             gh release create "$RELEASE_TAG" --title "$RELEASE_TAG" --draft --notes "Automated release draft."
           fi
 
+      - name: Generate updater metadata
+        env:
+          RELEASE_TAG: ${{ steps.release_tag.outputs.tag }}
+        run: |
+          version="${RELEASE_TAG#v}"
+          cat > release-assets/updater.json <<EOF
+          {
+            "version": "$version",
+            "notes": "See release page for details.",
+            "pub_date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "url": "https://github.com/Draculabo/AntigravityManager/releases/tag/${RELEASE_TAG}"
+          }
+          EOF
+
       - name: Upload assets to release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -235,6 +249,7 @@ jobs:
             -name '*.rpm' -o \
             -name '*.msi' -o \
             -name '*.yml' -o \
+            -name '*.json' -o \
             -name '*.txt' \
           \) | sort)
 
