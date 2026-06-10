@@ -52,6 +52,8 @@ const en = {
       'Antigravity storage.json was not found. Open the target Antigravity app and sign in once, then try switching again.',
     antigravityProjectIdMissing:
       'This account is missing an Antigravity project ID. This may happen if the account has not signed in to the Antigravity app before. Please sign in once in the Antigravity app, then return to this tool and try switching again.',
+    antigravityDatabasePermissionDenied:
+      'Antigravity database storage is not writable. Check the configured Antigravity user-data directory or restart Antigravity Manager after opening Antigravity once.',
   },
   nav: {
     accounts: 'Accounts',

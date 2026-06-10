@@ -663,7 +663,17 @@ function getPortableUserDataDir(target?: AntigravityAppTarget | null): string | 
   }
 
   const pathApi = getCurrentPlatformPathApi();
-  return pathApi.join(pathApi.dirname(executablePath), 'data', 'user-data');
+  const userDataDir = pathApi.join(pathApi.dirname(executablePath), 'data', 'user-data');
+
+  if (process.platform === 'linux') {
+    try {
+      fs.accessSync(userDataDir, fs.constants.W_OK);
+    } catch {
+      return null;
+    }
+  }
+
+  return userDataDir;
 }
 
 export function getAppDataDir(target?: AntigravityAppTarget | null): string {

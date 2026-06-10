@@ -11,6 +11,7 @@ const DATA_MIGRATION_HINT_CLEAR_DATA = 'HINT_CLEAR_DATA';
 const ANTIGRAVITY_STORAGE_JSON_NOT_FOUND = 'storage_json_not_found';
 const ENTERPRISE_PROJECT_ID_SWITCH_FAILURE = 'enterprise oauth requires a valid project_id';
 const MISSING_ENTERPRISE_PROJECT_ID_SWITCH_FAILURE = 'missing enterprise project_id';
+const PERMISSION_DENIED = 'permission denied';
 
 const KEYCHAIN_HINT_I18N_MAP: Record<string, string> = {
   [KEYCHAIN_HINT_TRANSLOCATION]: 'error.keychainHint.translocation',
@@ -67,6 +68,13 @@ function resolveApplicationMessage(rawMessage: string, t: TFunction): string | n
     return t('error.antigravityProjectIdMissing', {
       defaultValue:
         'This account is missing an Antigravity project ID. This may happen if the account has not signed in to the Antigravity app before. Please sign in once in the Antigravity app, then return to this tool and try switching again.',
+    });
+  }
+
+  if (normalizedMessage.includes('eacces') && normalizedMessage.includes(PERMISSION_DENIED)) {
+    return t('error.antigravityDatabasePermissionDenied', {
+      defaultValue:
+        'Antigravity database storage is not writable. Check the configured Antigravity user-data directory or restart Antigravity Manager after opening Antigravity once.',
     });
   }
 

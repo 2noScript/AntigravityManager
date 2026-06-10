@@ -53,6 +53,8 @@ const tr = {
       'Antigravity storage.json bulunamadı. Hedef Antigravity uygulamasını açıp bir kez giriş yapın, ardından değiştirmeyi tekrar deneyin.',
     antigravityProjectIdMissing:
       'Bu hesapta Antigravity proje kimliği eksik. Bu durum, hesap daha önce Antigravity uygulamasında oturum açmadıysa oluşabilir. Lütfen Antigravity uygulamasında bir kez oturum açın, ardından bu araca dönüp değiştirmeyi tekrar deneyin.',
+    antigravityDatabasePermissionDenied:
+      'Antigravity veritabanı depolama alanı yazılabilir değil. Yapılandırılmış Antigravity user-data dizinini kontrol edin veya Antigravity uygulamasını bir kez açtıktan sonra Antigravity Managerı yeniden başlatın.',
   },
   nav: {
     accounts: 'Hesaplar',

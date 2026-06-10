@@ -44,6 +44,8 @@ const ru = {
       'Файл Antigravity storage.json не найден. Откройте целевое приложение Antigravity и войдите один раз, затем повторите переключение.',
     antigravityProjectIdMissing:
       'У этого аккаунта отсутствует Antigravity project ID. Это может произойти, если аккаунт раньше не входил в приложение Antigravity. Войдите один раз в приложении Antigravity, затем вернитесь в этот инструмент и повторите переключение.',
+    antigravityDatabasePermissionDenied:
+      'Хранилище базы данных Antigravity недоступно для записи. Проверьте настроенный каталог Antigravity user-data или перезапустите Antigravity Manager после однократного открытия Antigravity.',
   },
   nav: {
     accounts: 'Аккаунты',

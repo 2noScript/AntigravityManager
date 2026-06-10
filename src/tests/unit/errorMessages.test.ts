@@ -10,12 +10,15 @@ const STORAGE_NOT_FOUND_MESSAGE =
   'Antigravity storage.json was not found. Open the target Antigravity app and sign in once, then try switching again.';
 const PROJECT_ID_MISSING_MESSAGE =
   'This account is missing an Antigravity project ID. This may happen if the account has not signed in to the Antigravity app before. Please sign in once in the Antigravity app, then return to this tool and try switching again.';
+const DATABASE_PERMISSION_MESSAGE =
+  'Antigravity database storage is not writable. Check the configured Antigravity user-data directory or restart Antigravity Manager after opening Antigravity once.';
 
 function createT(): TFunction {
   return ((key: string, options?: { defaultValue?: string }) => {
     const messages: Record<string, string> = {
       'error.antigravityStorageJsonNotFound': STORAGE_NOT_FOUND_MESSAGE,
       'error.antigravityProjectIdMissing': PROJECT_ID_MISSING_MESSAGE,
+      'error.antigravityDatabasePermissionDenied': DATABASE_PERMISSION_MESSAGE,
       'error.dataMigrationFailed': 'Unable to decrypt legacy account data.',
       'error.dataMigrationHint.relogin': 'Please re-login or re-add your accounts.',
     };
@@ -66,6 +69,14 @@ describe('getLocalizedErrorMessage', () => {
     expect(message).toBe(PROJECT_ID_MISSING_MESSAGE);
   });
 
+  it('explains Antigravity database permission failures', () => {
+    const message = getLocalizedErrorMessage(
+      new Error("EACCES: permission denied, mkdir '/usr/bin/data/user-data/User/globalStorage'"),
+      createT(),
+    );
+
+    expect(message).toBe(DATABASE_PERMISSION_MESSAGE);
+  });
 
   it('localizes backend messages passed through ORPC data', () => {
     const message = getLocalizedErrorMessage(

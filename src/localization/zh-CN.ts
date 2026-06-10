@@ -41,6 +41,8 @@ const zhCn = {
       '未找到 Antigravity 的 storage.json。请先打开目标 Antigravity 应用并登录一次，生成身份存储后再重试切换。',
     antigravityProjectIdMissing:
       '该账号缺少 Antigravity 项目 ID。可能是该账号没有登录过 Antigravity 应用导致，请先在 Antigravity 应用中登录一次，再回到本工具重试切换。',
+    antigravityDatabasePermissionDenied:
+      'Antigravity 数据库存储目录不可写。请检查配置的 Antigravity user-data 目录，或先打开一次 Antigravity 后重启 Antigravity 管理器。',
   },
   nav: {
     accounts: '账号',

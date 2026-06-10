@@ -53,6 +53,8 @@ const vi = {
       'Không tìm thấy storage.json của Antigravity. Hãy mở ứng dụng Antigravity mục tiêu và đăng nhập một lần, rồi thử chuyển lại.',
     antigravityProjectIdMissing:
       'Tài khoản này thiếu Antigravity project ID. Điều này có thể xảy ra nếu tài khoản chưa từng đăng nhập vào ứng dụng Antigravity. Hãy đăng nhập một lần trong ứng dụng Antigravity, rồi quay lại công cụ này và thử chuyển lại.',
+    antigravityDatabasePermissionDenied:
+      'Không thể ghi vào nơi lưu trữ cơ sở dữ liệu Antigravity. Hãy kiểm tra thư mục Antigravity user-data đã cấu hình hoặc khởi động lại Antigravity Manager sau khi mở Antigravity một lần.',
   },
   nav: {
     accounts: 'Tài khoản',
