@@ -671,7 +671,7 @@ function getPortableUserDataDir(target?: AntigravityAppTarget | null): string | 
   const pathApi = getCurrentPlatformPathApi();
   const userDataDir = pathApi.join(pathApi.dirname(executablePath), 'data', 'user-data');
 
-  if (process.platform === 'linux') {
+  if (process.platform !== 'win32') {
     try {
       fs.accessSync(userDataDir, fs.constants.W_OK);
     } catch {

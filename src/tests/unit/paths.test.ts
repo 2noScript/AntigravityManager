@@ -134,6 +134,24 @@ describe('Path Utilities', () => {
     );
   });
 
+  it('should skip non-writable derived portable user-data paths on macOS', async () => {
+    vi.resetModules();
+    setPlatform('darwin');
+    vi.spyOn(os, 'homedir').mockReturnValue('/Users/alice');
+    vi.spyOn(fs, 'existsSync').mockImplementation((candidatePath) => {
+      return String(candidatePath) === '/Applications/Antigravity.app/Contents/MacOS/Antigravity';
+    });
+
+    const paths = await import('../../shared/platform/paths');
+
+    expect(paths.getAntigravityDbPath()).toBe(
+      '/Users/alice/Library/Application Support/Antigravity/User/globalStorage/state.vscdb',
+    );
+    expect(paths.getAntigravityStoragePath()).toBe(
+      '/Users/alice/Library/Application Support/Antigravity/User/globalStorage/storage.json',
+    );
+  });
+
   it('should prioritize --user-data-dir from the running target process', async () => {
     vi.resetModules();
     setPlatform('win32');
