@@ -146,7 +146,12 @@ Use `npm` for all commands:
   - Feature services: PascalCase when matching existing class files (for example, `GoogleAPIService.ts`, `CloudMonitorService.ts`)
   - Tools/config: camelCase or kebab-case
 - **Import paths**: Use `@/` alias for `src/`.
-- **Type safety**: Avoid `any`; enforce end-to-end type safety with Zod + TypeScript.
+- **Type safety**: Avoid `any`, unnecessary `unknown`, and unsafe `as` casts; enforce end-to-end type safety with Zod + TypeScript.
+  - Prefer precise domain types, generics, discriminated unions, typed helper functions, and runtime schemas/type guards.
+  - Use `unknown` only at true runtime boundaries, such as `catch` values, deserialized IPC/ORPC payloads, external API responses before validation, JSON parsing, or third-party untyped data.
+  - Narrow `unknown` as close to the boundary as possible with Zod, runtime checks, or dedicated type guards.
+  - Avoid `as` for convenience. If a cast is unavoidable, keep it local and narrow, and explain why the compiler cannot infer the type safely.
+  - Do not replace a known shape with a broad type such as `Record<string, unknown>`; define an explicit interface/type or a keyed type map instead.
 - **Utility methods**: Prefer `lodash-es` over native JavaScript utilities for array/object/string transformations to improve consistency and maintainability.
   - Use named imports (for example, `import { get, groupBy, uniqBy } from 'lodash-es'`), and avoid full-package imports.
 - **Component design**:
