@@ -517,6 +517,10 @@ const zhCn = {
       stopped: '已停止',
       start: '启动服务',
       stop: '停止服务',
+      start_failed: '启动服务失败',
+      port_in_use_title: '端口已被占用',
+      port_in_use_description:
+        '端口 {{port}} 已被其他进程占用。请关闭占用该端口的程序，或在设置中修改 API 反代监听端口后重试。',
     },
     config: {
       port: '监听端口',

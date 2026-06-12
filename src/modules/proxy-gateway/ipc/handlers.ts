@@ -2,7 +2,12 @@
  * Gateway IPC Handlers
  * Provides ORPC handlers for controlling the API Gateway service (NestJS version)
  */
-import { bootstrapNestServer, stopNestServer, getNestServerStatus } from '@/server/main';
+import {
+  bootstrapNestServer,
+  stopNestServer,
+  getNestServerStatus,
+  type NestServerStartResult,
+} from '@/server/main';
 import { ConfigManager } from '@/modules/config/ipc/manager';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '@/shared/logging/logger';
@@ -10,7 +15,7 @@ import { logger } from '@/shared/logging/logger';
 /**
  * Start the gateway server (NestJS)
  */
-export const startGateway = async (port: number): Promise<boolean> => {
+export const startGateway = async (port: number): Promise<NestServerStartResult> => {
   try {
     // Stop if already running
     await stopNestServer();
@@ -22,7 +27,12 @@ export const startGateway = async (port: number): Promise<boolean> => {
     return await bootstrapNestServer(proxyConfig);
   } catch (e) {
     logger.error('Failed to start gateway:', e);
-    return false;
+    return {
+      success: false,
+      reason: 'unknown',
+      port,
+      message: e instanceof Error ? e.message : 'Failed to start gateway',
+    };
   }
 };
 

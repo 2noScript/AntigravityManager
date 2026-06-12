@@ -607,11 +607,20 @@ app
       const config = startupConfig || ConfigManager.loadConfig();
       if (config.proxy?.auto_start) {
         const port = config.proxy?.port || 8045;
+        let proxyStarted = false;
         // Default to a valid ProxyConfig object if null, although loadConfig ensures defaults
         if (config.proxy) {
-          await bootstrapNestServer(config.proxy);
+          const result = await bootstrapNestServer(config.proxy);
+          proxyStarted = result.success;
+          if (result.success) {
+            logger.info(`NestJS Proxy: Auto-started on port ${result.port}`);
+          } else {
+            logger.warn(`NestJS Proxy: Auto-start failed on port ${port}: ${result.message}`);
+          }
         }
-        logger.info(`NestJS Proxy: Auto-started on port ${port}`);
+        if (!proxyStarted) {
+          logger.info('NestJS Proxy: Auto-start skipped because the proxy server is not running');
+        }
       }
 
       const enabled = CloudAccountRepo.getSetting('auto_switch_enabled', false);

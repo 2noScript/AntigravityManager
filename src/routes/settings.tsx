@@ -117,6 +117,16 @@ function SettingsPage() {
     }
   };
 
+  const updateGatewayPort = (value: string) => {
+    if (!proxyConfig) {
+      return;
+    }
+
+    const port = Number.parseInt(value, 10);
+    const nextPort = Number.isInteger(port) && port >= 1024 && port <= 65535 ? port : 8045;
+    updateProxyConfig({ ...proxyConfig, port: nextPort });
+  };
+
   const saveAntigravityExecutable = async (value: string) => {
     const executablePath = value.trim();
     setAntigravityExecutable(executablePath);
@@ -706,8 +716,42 @@ function SettingsPage() {
           <ModelVisibilitySettings />
         </TabsContent>
 
-        {/* --- PROXY TAB (Upstream Proxy Config Only) --- */}
+        {/* --- PROXY TAB --- */}
         <TabsContent value="proxy" className="space-y-5">
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('settings.gateway.title')}</CardTitle>
+              <CardDescription>{t('settings.gateway.description')}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-2 sm:grid-cols-[1fr_180px] sm:items-center">
+                <div className="space-y-1">
+                  <Label htmlFor="settings-gateway-port">{t('settings.gateway.port')}</Label>
+                  <p className="text-muted-foreground text-xs">{t('settings.gateway.port_hint')}</p>
+                </div>
+                <Input
+                  id="settings-gateway-port"
+                  type="number"
+                  min={1024}
+                  max={65535}
+                  value={proxyConfig.port}
+                  onChange={(event) => updateGatewayPort(event.target.value)}
+                />
+              </div>
+              <div className="flex items-center justify-between rounded-lg border p-4">
+                <div className="space-y-1">
+                  <Label>{t('settings.gateway.auto_start')}</Label>
+                  <p className="text-xs text-gray-500">{t('settings.gateway.auto_start_desc')}</p>
+                </div>
+                <Switch
+                  checked={proxyConfig.auto_start}
+                  onCheckedChange={(checked) =>
+                    updateProxyConfig({ ...proxyConfig, auto_start: checked })
+                  }
+                />
+              </div>
+            </CardContent>
+          </Card>
           <Card>
             <CardHeader>
               <CardTitle>{t('settings.proxy.title')}</CardTitle>

@@ -532,6 +532,10 @@ const tr = {
       stopped: 'Durduruldu',
       start: 'Hizmeti Başlat',
       stop: 'Hizmeti Durdur',
+      start_failed: 'Hizmet başlatılamadı',
+      port_in_use_title: 'Port zaten kullanılıyor',
+      port_in_use_description:
+        '{{port}} portu başka bir işlem tarafından kullanılıyor. Bu işlemi kapatın veya Ayarlar bölümünden API proxy dinleme portunu değiştirip tekrar deneyin.',
     },
     config: {
       port: 'Dinleme Portu',

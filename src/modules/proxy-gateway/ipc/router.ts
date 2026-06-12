@@ -8,13 +8,9 @@ import { startGateway, stopGateway, getGatewayStatus, generateApiKey } from './h
 
 export const gatewayRouter = os.prefix('/gateway').router({
   start: os
-    .input(z.object({ port: z.number().min(1024).max(65535) }))
+    .input(z.object({ port: z.number().int().min(1024).max(65535) }))
     .handler(async ({ input }) => {
-      const success = await startGateway(input.port);
-      if (!success) {
-        throw new Error('Failed to start gateway');
-      }
-      return { success };
+      return startGateway(input.port);
     }),
 
   stop: os.handler(async () => {

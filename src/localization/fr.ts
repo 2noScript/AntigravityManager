@@ -554,6 +554,10 @@ const fr = {
       stopped: 'Arrete',
       start: 'Demarrer le service',
       stop: 'Arreter le service',
+      start_failed: 'Echec du demarrage du service',
+      port_in_use_title: 'Port deja utilise',
+      port_in_use_description:
+        'Le port {{port}} est deja utilise par un autre processus. Fermez ce processus, ou modifiez le port d ecoute du proxy API dans les parametres puis reessayez.',
     },
     config: {
       port: 'Port d ecoute',

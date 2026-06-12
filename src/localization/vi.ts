@@ -529,6 +529,10 @@ const vi = {
       stopped: 'Đã dừng',
       start: 'Bắt đầu dịch vụ',
       stop: 'Dừng dịch vụ',
+      start_failed: 'Không thể khởi động dịch vụ',
+      port_in_use_title: 'Cổng đã được sử dụng',
+      port_in_use_description:
+        'Cổng {{port}} đang được một tiến trình khác sử dụng. Hãy đóng tiến trình đó, hoặc đổi cổng lắng nghe API proxy trong Cài đặt rồi thử lại.',
     },
     config: {
       port: 'Cổng lắng nghe',

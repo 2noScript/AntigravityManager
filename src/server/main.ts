@@ -11,11 +11,51 @@ import { setServerConfig } from './server-config';
 let app: NestFastifyApplication | null = null;
 let currentPort: number = 0;
 
-export async function bootstrapNestServer(config: ProxyConfig): Promise<boolean> {
+export type NestServerStartResult =
+  | {
+      success: true;
+      port: number;
+      base_url: string;
+    }
+  | {
+      success: false;
+      reason: 'address-in-use' | 'unknown';
+      port: number;
+      message: string;
+    };
+
+function isAddressInUseError(error: unknown): boolean {
+  if ((typeof error !== 'object' && typeof error !== 'function') || error === null) {
+    return false;
+  }
+
+  return Reflect.get(error, 'code') === 'EADDRINUSE';
+}
+
+async function cleanupFailedServerStart() {
+  if (!app) {
+    return;
+  }
+
+  try {
+    await app.close();
+  } catch (closeError) {
+    logger.warn('Failed to clean up NestJS server after startup failure', closeError);
+  } finally {
+    app = null;
+    currentPort = 0;
+  }
+}
+
+export async function bootstrapNestServer(config: ProxyConfig): Promise<NestServerStartResult> {
   const port = config.port || 8045;
   if (app) {
     logger.info('NestJS server already running.');
-    return true;
+    return {
+      success: true,
+      port: currentPort,
+      base_url: `http://localhost:${currentPort}`,
+    };
   }
 
   setServerConfig(config);
@@ -31,10 +71,32 @@ export async function bootstrapNestServer(config: ProxyConfig): Promise<boolean>
     await app.listen(port, '0.0.0.0');
     currentPort = port;
     logger.info(`NestJS Proxy Server running on http://localhost:${port}`);
-    return true;
+    return {
+      success: true,
+      port,
+      base_url: `http://localhost:${port}`,
+    };
   } catch (error) {
+    await cleanupFailedServerStart();
+
+    if (isAddressInUseError(error)) {
+      const message = `Port ${port} is already in use`;
+      logger.warn(`NestJS Proxy Server could not start: ${message}`, error);
+      return {
+        success: false,
+        reason: 'address-in-use',
+        port,
+        message,
+      };
+    }
+
     logger.error('Failed to start NestJS server', error);
-    return false;
+    return {
+      success: false,
+      reason: 'unknown',
+      port,
+      message: error instanceof Error ? error.message : 'Failed to start NestJS server',
+    };
   }
 }
 

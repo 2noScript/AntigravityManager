@@ -545,6 +545,10 @@ const en = {
       stopped: 'Stopped',
       start: 'Start Service',
       stop: 'Stop Service',
+      start_failed: 'Failed to start service',
+      port_in_use_title: 'Port is already in use',
+      port_in_use_description:
+        'Port {{port}} is already in use by another process. Close that process, or change the API proxy listen port in Settings and try again.',
     },
     config: {
       port: 'Listen Port',
