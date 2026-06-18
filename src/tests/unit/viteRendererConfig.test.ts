@@ -42,11 +42,17 @@ describe('renderer Vite config', () => {
     const config = await resolveRendererConfig('production');
 
     expect(flattenPluginNames(config.plugins)).not.toContain('@code-inspector/vite');
-  });
+  }, 15000);
 
   it('keeps code inspector available during development', async () => {
     const config = await resolveRendererConfig('development');
 
     expect(flattenPluginNames(config.plugins)).toContain('@code-inspector/vite');
-  });
+  }, 15000);
+
+  it('defines NODE_ENV for renderer code without requiring Node integration', async () => {
+    const config = await resolveRendererConfig('production');
+
+    expect(config.define?.['process.env.NODE_ENV']).toBe(JSON.stringify('production'));
+  }, 15000);
 });

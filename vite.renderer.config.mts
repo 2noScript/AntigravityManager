@@ -60,6 +60,7 @@ export default defineConfig(({ mode }) => {
       entries: ['index.html'],
     },
     define: {
+      'process.env.NODE_ENV': JSON.stringify(mode),
       'process.env.SENTRY_DSN': JSON.stringify(process.env.SENTRY_DSN || env.SENTRY_DSN),
       CLARITY_BUILD_CONFIG: JSON.stringify(createClarityBuildConfig(clarityBuildEnv)),
     },

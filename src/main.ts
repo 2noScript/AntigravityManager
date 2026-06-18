@@ -336,7 +336,7 @@ function createWindow({ startHidden }: { startHidden: boolean }) {
     webPreferences: {
       devTools: inDevelopment,
       contextIsolation: true,
-      nodeIntegration: true,
+      nodeIntegration: false,
       nodeIntegrationInSubFrames: false,
       preload: preload,
     },

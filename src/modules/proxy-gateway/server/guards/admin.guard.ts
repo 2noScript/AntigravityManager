@@ -9,7 +9,7 @@ export class AdminGuard implements CanActivate {
     const apiKey = config?.api_key;
 
     if (!hasConfiguredApiKey(apiKey)) {
-      return true;
+      throw new UnauthorizedException('Admin API key is not configured');
     }
 
     const request = context.switchToHttp().getRequest();
