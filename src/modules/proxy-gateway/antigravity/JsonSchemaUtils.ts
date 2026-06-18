@@ -182,6 +182,7 @@ function cleanJsonSchemaRecursive(value: any) {
       'dependentSchemas',
       'dependentRequired',
       'cache_control', // Fixes 400 error triggered by cache_control mentioned by user
+      'tools',
     ];
     for (const field of hardRemoveFields) {
       delete map[field];

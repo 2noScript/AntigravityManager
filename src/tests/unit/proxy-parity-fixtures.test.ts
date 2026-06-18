@@ -56,6 +56,38 @@ describe('Proxy Parity Fixtures', () => {
     expect(actual.messages[2].content[0]).toEqual(expected.messages[2].content[0]);
   });
 
+  it('removes Codex-injected tools from function parameter schemas', () => {
+    const service = new TestableProxyService();
+    const input = {
+      model: 'claude-sonnet-4-5',
+      tools: [
+        {
+          type: 'function',
+          function: {
+            name: 'search_docs',
+            description: 'Search docs',
+            parameters: {
+              type: 'object',
+              tools: [{ type: 'function' }],
+              properties: {
+                query: {
+                  type: 'string',
+                  tools: [{ type: 'function' }],
+                },
+              },
+            },
+          },
+        },
+      ],
+      messages: [{ role: 'user', content: 'Find API key docs' }],
+    };
+
+    const actual = service.toAnthropic(input);
+
+    expect(actual.tools?.[0]?.input_schema).not.toHaveProperty('tools');
+    expect(actual.tools?.[0]?.input_schema.properties.query).not.toHaveProperty('tools');
+  });
+
   it('maps Anthropic response fixture to expected OpenAI response semantics', () => {
     const service = new TestableProxyService();
     const input = readFixture<any>('response/anthropic.tool-use.input.json');
@@ -97,5 +129,4 @@ describe('Proxy Parity Fixtures', () => {
       expect(output).toContain(token);
     }
   });
-
 });
