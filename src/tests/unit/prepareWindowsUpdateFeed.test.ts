@@ -18,7 +18,7 @@ describe('prepareWindowsUpdateFeed', () => {
 
     writeTextFile(
       path.join(sourceDir, 'squirrel.windows/x64/RELEASES'),
-      'd7b597ce68a0bcbfd6413eaceda20a097a50fc26 antigravity_manager-0.17.1-full.nupkg 123\n',
+      '\ufeffd7b597ce68a0bcbfd6413eaceda20a097a50fc26 antigravity_manager-0.17.1-full.nupkg 123\n',
     );
     writeTextFile(
       path.join(sourceDir, 'squirrel.windows/x64/antigravity_manager-0.17.1-full.nupkg'),
@@ -57,6 +57,9 @@ describe('prepareWindowsUpdateFeed', () => {
     ).toBe(false);
     expect(readFileSync(path.join(outputDir, 'win32/arm64/RELEASES'), 'utf8')).toContain(
       'https://github.com/Draculabo/AntigravityManager/releases/download/v0.17.1/antigravity_manager-0.17.1-arm64-full.nupkg',
+    );
+    expect(readFileSync(path.join(outputDir, 'win32/x64/RELEASES'), 'utf8')).toContain(
+      'd7b597ce68a0bcbfd6413eaceda20a097a50fc26 https://github.com/Draculabo/AntigravityManager/releases/download/v0.17.1/antigravity_manager-0.17.1-full.nupkg 123',
     );
   });
 });

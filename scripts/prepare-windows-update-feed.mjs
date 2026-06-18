@@ -86,31 +86,61 @@ function getReleaseAssetBaseUrl({ releaseTag, repository }) {
   return `https://github.com/${repository}/releases/download/${releaseTag}`;
 }
 
+function removeByteOrderMarker(value) {
+  if (value.charCodeAt(0) === 0xfeff) {
+    return value.slice(1);
+  }
+
+  return value;
+}
+
+function parseReleaseLine(line) {
+  const match = line.match(
+    /^(?<hash>[0-9a-fA-F]{40})(?<hashSeparator>\s+)(?<file>.+?)(?<sizeSeparator>\s+)(?<size>\d+)(?<suffix>\s*(?:#.*)?\r?)$/,
+  );
+  if (!match?.groups) {
+    return null;
+  }
+
+  return match.groups;
+}
+
 function rewriteReleasePackageUrls({ content, packages, releaseAssetBaseUrl }) {
   const packageNames = new Set(packages.map((file) => path.basename(file)));
   let replacementCount = 0;
 
-  const rewritten = content
+  const rewritten = removeByteOrderMarker(content)
     .split('\n')
     .map((line) => {
-      const match = line.match(/^([0-9a-fA-F]{40}\s+)(\S+)(\s+\d+(?:\s+#.*)?\r?)$/);
-      if (!match) {
+      const parsedLine = parseReleaseLine(line);
+      if (!parsedLine) {
         return line;
       }
 
-      const packageFileName = getPackageFileName(match[2]);
+      const packageFileName = getPackageFileName(parsedLine.file);
       if (!packageNames.has(packageFileName)) {
         return line;
       }
 
       replacementCount += 1;
       const packageUrl = `${releaseAssetBaseUrl}/${encodeURIComponent(packageFileName)}`;
-      return `${match[1]}${packageUrl}${match[3]}`;
+      return `${parsedLine.hash}${parsedLine.hashSeparator}${packageUrl}${parsedLine.sizeSeparator}${parsedLine.size}${parsedLine.suffix}`;
     })
     .join('\n');
 
   if (replacementCount === 0) {
-    throw new Error('Windows RELEASES file does not reference any matching .nupkg package');
+    const releasePackageNames = removeByteOrderMarker(content)
+      .split('\n')
+      .map((line) => parseReleaseLine(line)?.file)
+      .filter(Boolean)
+      .map((file) => getPackageFileName(file));
+    throw new Error(
+      [
+        'Windows RELEASES file does not reference any matching .nupkg package',
+        `Expected package(s): ${[...packageNames].join(', ')}`,
+        `RELEASES package reference(s): ${releasePackageNames.join(', ') || '<none>'}`,
+      ].join('\n'),
+    );
   }
 
   return rewritten;
