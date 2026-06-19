@@ -6,6 +6,7 @@ import { logger } from '@/shared/logging/logger';
 import { classifyAccountStatusFromError } from '@/modules/cloud-account/utils/account-status';
 import type { CloudAccount } from '@/modules/cloud-account/types';
 import { AntigravityAppTargetSchema } from '@/modules/account/types';
+import type { AntigravityAppTarget } from '@/modules/account/types';
 
 type CloudMonitorLanguage = 'en' | 'zh-CN' | 'ru' | 'vi' | 'fr';
 
@@ -37,6 +38,10 @@ const CLOUD_MONITOR_NOTIFICATION_TEXT: Record<
     lowQuotaBody: (email, models) => `${email} : quota faible pour ${models}`,
   },
 };
+
+const AUTO_SWITCH_TARGETS: AntigravityAppTarget[] = AntigravityAppTargetSchema.options.filter(
+  (target) => target !== 'agy',
+);
 
 function getCloudMonitorLanguage(language: string | null | undefined): CloudMonitorLanguage {
   const normalizedLanguage = language?.toLowerCase() ?? 'en';
@@ -272,7 +277,7 @@ export class CloudMonitorService {
       }
 
       // 5. Check for Auto-Switch
-      for (const target of AntigravityAppTargetSchema.options) {
+      for (const target of AUTO_SWITCH_TARGETS) {
         await AutoSwitchService.checkAndSwitchIfNeeded(target);
       }
     } finally {
