@@ -180,6 +180,8 @@ const en = {
       description: 'Control application launch behavior at system startup.',
       auto_startup: 'Start with system',
       auto_startup_desc: 'Launch at sign-in and keep the app in the system tray',
+      start_in_tray: 'Start in tray',
+      start_in_tray_desc: 'Start the application minimized in the system tray',
       macos_hint:
         'macOS requires a signed app for Login Items to work. If auto-start fails, please sign the app or enable it manually in System Settings.',
     },
@@ -208,7 +210,8 @@ const en = {
       saveFailed: 'Failed to save notification settings',
       thresholdSaveFailed: 'Failed to save threshold setting',
       aiCreditsAlert: 'Low AI Credits Alert',
-      aiCreditsAlertDesc: 'Get notified when the AI credits balance falls at or below the set amount',
+      aiCreditsAlertDesc:
+        'Get notified when the AI credits balance falls at or below the set amount',
       aiCreditsThreshold: 'AI Credits Alert Threshold',
       aiCreditsThresholdDesc: 'Credit amount at or below which to trigger an alert',
       aiCreditsThresholdSaveFailed: 'Failed to save AI credits threshold setting',

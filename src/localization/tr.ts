@@ -178,6 +178,8 @@ const tr = {
       description: 'Sistem başlangıcında uygulamanın nasıl davranacağını kontrol edin.',
       auto_startup: 'Sistemle birlikte başlat',
       auto_startup_desc: 'Oturum açıldığında başlat ve sistem tepsisinde tut',
+      start_in_tray: 'Sistem tepsisinde başlat',
+      start_in_tray_desc: 'Uygulamayı sistem tepsisinde simge durumuna küçültülmüş olarak başlat',
       macos_hint:
         'macOS, Oturum Açma Öğelerinin çalışması için imzalanmış bir uygulama gerektirir. Otomatik başlatma başarısız olursa, lütfen uygulamayı imzalayın veya Sistem Ayarlarından manuel olarak etkinleştirin.',
     },
@@ -207,7 +209,8 @@ const tr = {
       saveFailed: 'Bildirim ayarları kaydedilemedi',
       thresholdSaveFailed: 'Eşik ayarı kaydedilemedi',
       aiCreditsAlert: 'Düşük AI Kredisi Uyarısı',
-      aiCreditsAlertDesc: 'AI kredi bakiyesi belirlenen miktara ulaştığında veya altına düştüğünde bildirim alın',
+      aiCreditsAlertDesc:
+        'AI kredi bakiyesi belirlenen miktara ulaştığında veya altına düştüğünde bildirim alın',
       aiCreditsThreshold: 'AI Kredisi Uyarı Eşiği',
       aiCreditsThresholdDesc: 'Uyarının tetikleneceği kredi miktarı',
       aiCreditsThresholdSaveFailed: 'AI kredisi eşiği kaydedilemedi',
