@@ -24,6 +24,7 @@ import { stringify as yamlStringify } from 'yaml';
 import { getArtifactFileName } from './src/shared/packaging/artifactNames';
 import { packageIgnorePatterns } from './src/shared/packaging/forgeIgnore';
 import { normalizeSquirrelArtifacts } from './src/shared/packaging/squirrelArtifacts';
+import { shouldIncludeInElectronUpdaterMetadata } from './src/shared/packaging/updateMetadata';
 
 const nativeModules = ['better-sqlite3', 'keytar', 'bindings', 'file-uri-to-path'];
 const ResolvedMakerAppImage = MakerAppImage;
@@ -312,7 +313,13 @@ const config: ForgeConfig = {
               const sha256 = crypto.createHash('sha256').update(fileData).digest('hex');
               const { size } = fs.statSync(newArtifact);
 
-              if (updateState) {
+              if (
+                updateState &&
+                shouldIncludeInElectronUpdaterMetadata({
+                  platform: platformKey,
+                  extension,
+                })
+              ) {
                 updateState.yml.files.push({
                   url: path.basename(newArtifact),
                   sha512: hash,
