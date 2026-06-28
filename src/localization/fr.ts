@@ -45,9 +45,15 @@ const fr = {
       title: 'Mise a jour disponible',
       description: 'La version {{version}} est disponible sur GitHub.',
       download: 'Telecharger',
+      downloading: 'Telechargement...',
       dismiss: 'Ignorer',
       macosUnsignedNote:
         'Cette version macOS n est pas officiellement signee. Si macOS bloque l app, suivez les etapes de signature manuelle dans le README GitHub ou les issues associees.',
+    },
+    downloaded: {
+      title: 'Mise a jour prete',
+      description: 'La version {{version}} a ete telechargee.',
+      restart: 'Redemarrer',
     },
   },
   error: {

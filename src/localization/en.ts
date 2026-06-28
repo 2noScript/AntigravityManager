@@ -42,9 +42,15 @@ const en = {
       title: 'Update available',
       description: 'Version {{version}} is available on GitHub.',
       download: 'Download',
+      downloading: 'Downloading...',
       dismiss: 'Dismiss',
       macosUnsignedNote:
         'This macOS build is not officially signed. If macOS blocks the app, follow the manual signing steps in the GitHub README or related issues.',
+    },
+    downloaded: {
+      title: 'Update ready',
+      description: 'Version {{version}} has been downloaded.',
+      restart: 'Restart',
     },
   },
   error: {

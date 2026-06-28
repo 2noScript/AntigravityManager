@@ -42,9 +42,15 @@ const tr = {
       title: 'Güncelleme var',
       description: '{{version}} sürümü GitHub üzerinde mevcut.',
       download: 'İndir',
+      downloading: 'İndiriliyor...',
       dismiss: 'Kapat',
       macosUnsignedNote:
         'Bu macOS derlemesi resmi olarak imzalanmamıştır. macOS uygulamayı engellerse GitHub README veya ilgili issue kayıtlarındaki elle imzalama adımlarını izleyin.',
+    },
+    downloaded: {
+      title: 'Güncelleme hazır',
+      description: '{{version}} sürümü indirildi.',
+      restart: 'Yeniden başlat',
     },
   },
   error: {

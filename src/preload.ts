@@ -30,6 +30,12 @@ const electronBridge = {
   checkForUpdates: () => {
     return ipcRenderer.invoke(IPC_CHANNELS.CHECK_FOR_UPDATES);
   },
+  downloadUpdate: () => {
+    return ipcRenderer.invoke(IPC_CHANNELS.DOWNLOAD_UPDATE);
+  },
+  installUpdate: () => {
+    return ipcRenderer.invoke(IPC_CHANNELS.INSTALL_UPDATE);
+  },
   dismissManualUpdate: (version: string) => {
     return ipcRenderer.invoke(IPC_CHANNELS.DISMISS_MANUAL_UPDATE, version);
   },

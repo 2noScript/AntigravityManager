@@ -42,9 +42,15 @@ const vi = {
       title: 'Có bản cập nhật',
       description: 'Phiên bản {{version}} đã có trên GitHub.',
       download: 'Tải xuống',
+      downloading: 'Đang tải...',
       dismiss: 'Đóng',
       macosUnsignedNote:
         'Bản macOS này chưa được ký chính thức. Nếu macOS chặn ứng dụng, hãy làm theo các bước ký thủ công trong GitHub README hoặc các issue liên quan.',
+    },
+    downloaded: {
+      title: 'Bản cập nhật đã sẵn sàng',
+      description: 'Phiên bản {{version}} đã được tải xuống.',
+      restart: 'Khởi động lại',
     },
   },
   error: {

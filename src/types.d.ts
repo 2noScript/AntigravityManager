@@ -10,7 +10,9 @@ declare global {
     tagName: string;
     releaseName: string;
     releaseUrl: string;
-    platform: 'darwin' | 'linux';
+    platform: 'darwin' | 'linux' | 'win32';
+    source?: 'manual' | 'electron-updater';
+    state?: 'available' | 'downloaded';
   }
 
   type ManualUpdateCheckResult =
@@ -39,10 +41,24 @@ declare global {
       changeLanguage: (lang: string) => void;
       onManualUpdateAvailable: (callback: (update: ManualUpdateInfo) => void) => () => void;
       checkForUpdates: () => Promise<ManualUpdateCheckResult>;
+      downloadUpdate: () => Promise<UpdateActionResult>;
+      installUpdate: () => Promise<UpdateActionResult>;
       dismissManualUpdate: (version: string) => Promise<void>;
       openExternalUrl: (url: string) => Promise<void>;
     };
   }
+
+  type UpdateActionResult =
+    | {
+        status: 'started';
+      }
+    | {
+        status: 'unsupported' | 'not-available' | 'already-downloaded' | 'already-downloading';
+      }
+    | {
+        status: 'error';
+        message: string;
+      };
 }
 
 export {};

@@ -33,9 +33,15 @@ const ru = {
       title: 'Доступно обновление',
       description: 'Версия {{version}} доступна на GitHub.',
       download: 'Скачать',
+      downloading: 'Скачивание...',
       dismiss: 'Закрыть',
       macosUnsignedNote:
         'Эта сборка macOS официально не подписана. Если macOS блокирует приложение, следуйте шагам ручной подписи в GitHub README или связанных issues.',
+    },
+    downloaded: {
+      title: 'Обновление готово',
+      description: 'Версия {{version}} загружена.',
+      restart: 'Перезапустить',
     },
   },
   error: {

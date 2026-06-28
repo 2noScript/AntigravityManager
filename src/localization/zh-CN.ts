@@ -33,9 +33,15 @@ const zhCn = {
       title: '发现新版本',
       description: 'GitHub 上已有 {{version}} 版本。',
       download: '下载',
+      downloading: '正在下载...',
       dismiss: '关闭',
       macosUnsignedNote:
         'macOS 新版本未进行官方签名。如果系统阻止打开应用，请参考 GitHub README 或相关 issue 中的手动签名方式。',
+    },
+    downloaded: {
+      title: '更新已就绪',
+      description: '{{version}} 版本已下载完成。',
+      restart: '重启',
     },
   },
   error: {

@@ -40,7 +40,13 @@ import {
 } from '@/modules/app-shell/update/manualUpdateChecker';
 import { isManualUpdateSnoozed } from '@/modules/app-shell/update/manualUpdatePolicy';
 import type { ManualUpdateInfo } from '@/modules/app-shell/update/types';
-import { getWindowsUpdateBaseUrl } from '@/modules/app-shell/update/windowsUpdateSource';
+import {
+  checkElectronUpdaterUpdate,
+  downloadElectronUpdaterUpdate,
+  installElectronUpdaterUpdate,
+  registerElectronUpdater,
+} from '@/modules/app-shell/update/electronUpdaterService';
+import { selectWindowsUpdateResult } from '@/modules/app-shell/update/windowsUpdateFallbackPolicy';
 import { getQuickObservabilityConfig } from '@/shared/observability/observabilityConfig';
 
 const packetLogPath = path.join(app.getPath('userData'), 'orpc_packets.log');
@@ -231,13 +237,47 @@ function isTrustedReleaseUrl(url: string): boolean {
   }
 }
 
+async function checkWindowsUpdate(): Promise<Awaited<ReturnType<typeof checkManualUpdate>>> {
+  const electronUpdaterResult = await checkElectronUpdaterUpdate();
+  if (electronUpdaterResult.status === 'available') {
+    return electronUpdaterResult;
+  }
+
+  const manualResult = await checkManualUpdate(app.getVersion());
+  const result = selectWindowsUpdateResult({ electronUpdaterResult, manualResult });
+  if (manualResult.status === 'available') {
+    logger.warn(
+      `Update: electron-updater reported ${electronUpdaterResult.status}, but GitHub release fallback found ${manualResult.update.version}`,
+    );
+  }
+
+  return result;
+}
+
 ipcMain.handle(IPC_CHANNELS.CHECK_FOR_UPDATES, async () => {
+  if (process.platform === 'win32') {
+    const result = await checkWindowsUpdate();
+    if (result.status === 'available') {
+      emitManualUpdateNotification(result.update, { force: true });
+    }
+
+    return result;
+  }
+
   const result = await checkManualUpdate(app.getVersion());
   if (result.status === 'available') {
     emitManualUpdateNotification(result.update, { force: true });
   }
 
   return result;
+});
+
+ipcMain.handle(IPC_CHANNELS.DOWNLOAD_UPDATE, async () => {
+  return downloadElectronUpdaterUpdate();
+});
+
+ipcMain.handle(IPC_CHANNELS.INSTALL_UPDATE, async () => {
+  return installElectronUpdaterUpdate();
 });
 
 ipcMain.on(IPC_CHANNELS.MANUAL_UPDATE_RENDERER_READY, () => {
@@ -494,16 +534,10 @@ async function checkForUpdates() {
   }
 
   if (process.platform === 'win32' && !isMockingManualUpdate && !isForcingManualUpdate) {
-    try {
-      const { updateElectronApp, UpdateSourceType } = await import('update-electron-app');
-      updateElectronApp({
-        updateSource: {
-          type: UpdateSourceType.StaticStorage,
-          baseUrl: getWindowsUpdateBaseUrl(),
-        },
-      });
-    } catch (error) {
-      logger.error('Update: Failed to initialize Windows auto updater', error);
+    registerElectronUpdater(emitManualUpdateNotification);
+    const result = await checkWindowsUpdate();
+    if (result.status === 'available') {
+      emitManualUpdateNotification(result.update);
     }
     return;
   }

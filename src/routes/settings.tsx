@@ -103,7 +103,8 @@ function SettingsPage() {
   const isAutoStartSupported =
     platform === 'win32' || platform === 'darwin' || platform === 'linux';
   const isMac = platform === 'darwin';
-  const supportsManualUpdateCheck = platform === 'darwin' || platform === 'linux';
+  const supportsManualUpdateCheck =
+    platform === 'win32' || platform === 'darwin' || platform === 'linux';
 
   const handleLanguageChange = (value: string) => {
     setAppLanguage(value, i18n);
