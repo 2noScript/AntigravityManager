@@ -29,7 +29,7 @@ const MANUAL_UPDATE_SNOOZE_KEY = 'manual_update_snooze';
 const MANUAL_UPDATE_MOCK_VERSION = '9.9.9';
 
 function isManualUpdatePlatform(platform: NodeJS.Platform): platform is ManualUpdatePlatform {
-  return platform === 'darwin' || platform === 'linux';
+  return platform === 'darwin' || platform === 'linux' || platform === 'win32';
 }
 
 export function getManualUpdateSnooze(): ManualUpdateSnooze | null {

@@ -30,6 +30,23 @@ describe('manual update policy', () => {
     });
   });
 
+  it('supports manual fallback notifications on Windows installs', () => {
+    const update = buildManualUpdateInfo({
+      currentVersion: '1.2.3',
+      platform: 'win32',
+      release: {
+        tag_name: 'v1.3.0',
+        name: 'Antigravity Manager 1.3.0',
+        html_url: 'https://github.com/Draculabo/AntigravityManager/releases/tag/v1.3.0',
+        draft: false,
+        prerelease: false,
+      },
+    });
+
+    expect(update?.platform).toBe('win32');
+    expect(update?.version).toBe('1.3.0');
+  });
+
   it('treats the matching stable release as newer than the current prerelease build', () => {
     const update = buildManualUpdateInfo({
       currentVersion: '1.2.3-beta.1',

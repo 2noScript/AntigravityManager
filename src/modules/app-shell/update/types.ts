@@ -1,4 +1,6 @@
-export type ManualUpdatePlatform = 'darwin' | 'linux';
+export type ManualUpdatePlatform = 'darwin' | 'linux' | 'win32';
+export type UpdateNotificationSource = 'manual' | 'electron-updater';
+export type UpdateNotificationState = 'available' | 'downloaded';
 
 export interface GitHubRelease {
   tag_name: string;
@@ -25,6 +27,8 @@ export interface ManualUpdateInfo {
   releaseName: string;
   releaseUrl: string;
   platform: ManualUpdatePlatform;
+  source?: UpdateNotificationSource;
+  state?: UpdateNotificationState;
 }
 
 export interface ManualUpdateSnooze {
