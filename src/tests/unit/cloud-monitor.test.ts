@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { CloudMonitorService } from '@/modules/cloud-account/services/CloudMonitorService';
 import { CloudAccountRepo } from '@/modules/cloud-account/persistence/cloudHandler';
+import { CloudAccountSettingsStore } from '@/modules/cloud-account/persistence/cloud-account-settings-store';
 import { GoogleAPIService } from '@/modules/cloud-account/services/GoogleAPIService';
 import { AutoSwitchService } from '@/modules/cloud-account/services/AutoSwitchService';
 import { TokenManagerService } from '../../modules/proxy-gateway/server/token-manager.service';
@@ -9,6 +10,7 @@ import * as electronMock from 'electron';
 
 // Mock dependencies
 vi.mock('@/modules/cloud-account/persistence/cloudHandler');
+vi.mock('@/modules/cloud-account/persistence/cloud-account-settings-store');
 vi.mock('@/modules/cloud-account/services/GoogleAPIService');
 vi.mock('@/modules/cloud-account/services/AutoSwitchService');
 vi.mock('../../shared/logging/logger');
@@ -246,13 +248,15 @@ describe('CloudMonitorService AI credits alert', () => {
     vi.mocked(CloudAccountRepo.getAccounts).mockResolvedValue(accounts as never);
     vi.mocked(GoogleAPIService.fetchQuota).mockResolvedValue({ models: {} } as never);
     vi.mocked(GoogleAPIService.fetchAICredits).mockResolvedValue(null as never);
-    vi.mocked(CloudAccountRepo.getSetting).mockImplementation((key: string, def: unknown) => {
-      if (key === 'ai_credits_alert_enabled') return alertEnabled;
-      if (key === 'ai_credits_alert_threshold') return threshold;
-      if (key === 'quota_alert_enabled') return false;
-      if (key === 'language') return 'en';
-      return def;
-    });
+    vi.mocked(CloudAccountSettingsStore.getSetting).mockImplementation(
+      (key: string, def: unknown) => {
+        if (key === 'ai_credits_alert_enabled') return alertEnabled;
+        if (key === 'ai_credits_alert_threshold') return threshold;
+        if (key === 'quota_alert_enabled') return false;
+        if (key === 'language') return 'en';
+        return def;
+      },
+    );
   }
 
   it('fires a notification when credits are below threshold', async () => {

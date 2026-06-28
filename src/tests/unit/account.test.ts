@@ -6,7 +6,7 @@ import {
   deleteAccount,
 } from '@/modules/account/ipc/handler';
 import { restoreAccount } from '@/shared/persistence/database/handler';
-import { CloudAccountRepo } from '@/modules/cloud-account/persistence/cloudHandler';
+import { CredentialStoreInjectionAdapter } from '@/modules/cloud-account/persistence/credential-store-injection-adapter';
 import { writeAntigravityCredentialStoreToken } from '@/modules/cloud-account/persistence/antigravityCredentialStore';
 import { startAntigravity } from '@/modules/antigravity-runtime/ipc/handler';
 import fs from 'fs';
@@ -44,8 +44,8 @@ vi.mock('@/shared/persistence/database/handler', () => ({
   getDatabaseConnection: vi.fn(),
 }));
 
-vi.mock('@/modules/cloud-account/persistence/cloudHandler', () => ({
-  CloudAccountRepo: {
+vi.mock('@/modules/cloud-account/persistence/credential-store-injection-adapter', () => ({
+  CredentialStoreInjectionAdapter: {
     shouldInjectTokenIntoCredentialStore: vi.fn(() => false),
   },
 }));
@@ -123,7 +123,9 @@ describe('Account Handler', () => {
   });
 
   it('should use credential store for Classic when required', async () => {
-    vi.mocked(CloudAccountRepo.shouldInjectTokenIntoCredentialStore).mockReturnValueOnce(true);
+    vi.mocked(
+      CredentialStoreInjectionAdapter.shouldInjectTokenIntoCredentialStore,
+    ).mockReturnValueOnce(true);
 
     const account = await addAccountSnapshot();
     await switchAccount(account.id);

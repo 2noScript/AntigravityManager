@@ -1,4 +1,5 @@
 import { CloudAccountRepo } from '@/modules/cloud-account/persistence/cloudHandler';
+import { CloudAccountSettingsStore } from '@/modules/cloud-account/persistence/cloud-account-settings-store';
 import { CloudAccount } from '@/modules/cloud-account/types';
 import { switchCloudAccount } from '@/modules/cloud-account/ipc/handler';
 import { logger } from '@/shared/logging/logger';
@@ -61,12 +62,12 @@ export class AutoSwitchService {
   static async checkAndSwitchIfNeeded(
     appTarget?: AntigravityAppTarget | undefined,
   ): Promise<boolean> {
-    const enabled = CloudAccountRepo.getSetting<boolean>('auto_switch_enabled', false);
+    const enabled = CloudAccountSettingsStore.getSetting<boolean>('auto_switch_enabled', false);
     if (!enabled) return false;
 
     // Get current active account for the target
     const accounts = await CloudAccountRepo.getAccounts();
-    const activeAccountId = CloudAccountRepo.getActiveAccountIdForTarget(appTarget);
+    const activeAccountId = CloudAccountSettingsStore.getActiveAccountIdForTarget(appTarget);
     const currentAccount = activeAccountId
       ? accounts.find((a) => a.id === activeAccountId)
       : accounts.find((a) => a.is_active);

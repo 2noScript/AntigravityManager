@@ -24,10 +24,11 @@ import {
   exportCloudAccounts,
   importCloudAccounts,
 } from './handler';
+import { CloudAccountRepo } from '@/modules/cloud-account/persistence/cloudHandler';
 import {
   AGY_SYNC_FROM_IDE_UNSUPPORTED_MESSAGE,
-  CloudAccountRepo,
-} from '@/modules/cloud-account/persistence/cloudHandler';
+  IdeAccountImportAdapter,
+} from '@/modules/cloud-account/persistence/ide-account-import-adapter';
 import { CloudAccountSchema } from '@/modules/cloud-account/types';
 import { AntigravityAppTargetSchema } from '@/modules/account/types';
 import {
@@ -229,7 +230,7 @@ export const cloudRouter = os.router({
     .output(CloudAccountSchema.nullable())
     .handler(async ({ input }) => {
       try {
-        const result = await CloudAccountRepo.syncFromIde(input?.appTarget);
+        const result = await IdeAccountImportAdapter.syncFromIde(input?.appTarget);
 
         return result;
       } catch (error: any) {

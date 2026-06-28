@@ -1,10 +1,12 @@
 import fs from 'fs';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ProtobufUtils } from '../../shared/serialization/protobuf';
+import { CloudAccountRepo } from '@/modules/cloud-account/persistence/cloudHandler';
+import { CredentialStoreInjectionAdapter } from '@/modules/cloud-account/persistence/credential-store-injection-adapter';
 import {
   AGY_SYNC_FROM_IDE_UNSUPPORTED_MESSAGE,
-  CloudAccountRepo,
-} from '@/modules/cloud-account/persistence/cloudHandler';
+  IdeAccountImportAdapter,
+} from '@/modules/cloud-account/persistence/ide-account-import-adapter';
 import { writeAntigravityCredentialStoreToken } from '@/modules/cloud-account/persistence/antigravityCredentialStore';
 import type { UserInfo } from '@/modules/cloud-account/services/GoogleAPIService';
 import { toSyncLocalAccountORPCError } from '@/modules/cloud-account/ipc/router';
@@ -97,7 +99,7 @@ vi.mock('@/modules/cloud-account/persistence/antigravityCredentialStore', () => 
   writeAntigravityCredentialStoreToken: vi.fn(),
 }));
 
-describe('CloudAccountRepo.syncFromIde', () => {
+describe('IdeAccountImportAdapter.syncFromIde', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockData = {};
@@ -185,13 +187,13 @@ describe('CloudAccountRepo.syncFromIde', () => {
     vi.spyOn(CloudAccountRepo, 'getAccounts').mockResolvedValue([]);
     vi.spyOn(CloudAccountRepo, 'addAccount').mockResolvedValue();
 
-    await CloudAccountRepo.syncFromIde('ide');
+    await IdeAccountImportAdapter.syncFromIde('ide');
 
     expect(getAntigravityDbPathsCalls).toEqual(['ide']);
   });
 
   it('should reject agy CLI sync before reading IDE SQLite paths', async () => {
-    await expect(CloudAccountRepo.syncFromIde('agy')).rejects.toThrow(
+    await expect(IdeAccountImportAdapter.syncFromIde('agy')).rejects.toThrow(
       AGY_SYNC_FROM_IDE_UNSUPPORTED_MESSAGE,
     );
 
@@ -224,7 +226,7 @@ describe('CloudAccountRepo.syncFromIde', () => {
     vi.spyOn(CloudAccountRepo, 'getAccounts').mockResolvedValue([]);
     vi.spyOn(CloudAccountRepo, 'addAccount').mockResolvedValue();
 
-    const account = await CloudAccountRepo.syncFromIde();
+    const account = await IdeAccountImportAdapter.syncFromIde();
 
     expect(GoogleAPIService.getUserInfo).toHaveBeenCalledWith(accessToken);
     expect(account?.email).toBe('new@example.com');
@@ -253,7 +255,7 @@ describe('CloudAccountRepo.syncFromIde', () => {
     vi.spyOn(CloudAccountRepo, 'getAccounts').mockResolvedValue([]);
     vi.spyOn(CloudAccountRepo, 'addAccount').mockResolvedValue();
 
-    const account = await CloudAccountRepo.syncFromIde();
+    const account = await IdeAccountImportAdapter.syncFromIde();
 
     expect(GoogleAPIService.getUserInfo).toHaveBeenCalledWith(accessToken);
     expect(account?.email).toBe('enterprise@example.com');
@@ -277,7 +279,7 @@ describe('CloudAccountRepo.syncFromIde', () => {
     vi.spyOn(CloudAccountRepo, 'getAccounts').mockResolvedValue([]);
     vi.spyOn(CloudAccountRepo, 'addAccount').mockResolvedValue();
 
-    const account = await CloudAccountRepo.syncFromIde();
+    const account = await IdeAccountImportAdapter.syncFromIde();
 
     expect(GoogleAPIService.getUserInfo).toHaveBeenCalledWith(accessToken);
     expect(account?.email).toBe('old@example.com');
@@ -328,7 +330,7 @@ describe('CloudAccountRepo.syncFromIde', () => {
     vi.spyOn(CloudAccountRepo, 'getAccounts').mockResolvedValue([existingAccount]);
     const addAccountSpy = vi.spyOn(CloudAccountRepo, 'addAccount').mockResolvedValue();
 
-    const account = await CloudAccountRepo.syncFromIde();
+    const account = await IdeAccountImportAdapter.syncFromIde();
 
     expect(account?.id).toBe('existing-id');
     expect(account?.token.project_id).toBe('project-keep');
@@ -402,7 +404,7 @@ describe('CloudAccountRepo.syncFromIde', () => {
     vi.spyOn(CloudAccountRepo, 'getAccounts').mockResolvedValue([existingAccount]);
     const addAccountSpy = vi.spyOn(CloudAccountRepo, 'addAccount').mockResolvedValue();
 
-    const account = await CloudAccountRepo.syncFromIde();
+    const account = await IdeAccountImportAdapter.syncFromIde();
 
     expect(account?.token.project_id).toBe('enterprise-project-recovered');
     expect(addAccountSpy).toHaveBeenCalledWith(
@@ -456,7 +458,7 @@ describe('CloudAccountRepo.syncFromIde', () => {
     vi.spyOn(CloudAccountRepo, 'getAccounts').mockResolvedValue([existingAccount]);
     const addAccountSpy = vi.spyOn(CloudAccountRepo, 'addAccount').mockResolvedValue();
 
-    const account = await CloudAccountRepo.syncFromIde();
+    const account = await IdeAccountImportAdapter.syncFromIde();
 
     expect(account?.status).toBe('active');
     expect(account?.status_reason).toBeUndefined();
@@ -486,7 +488,7 @@ describe('CloudAccountRepo.syncFromIde', () => {
     vi.spyOn(CloudAccountRepo, 'getAccounts').mockResolvedValue([]);
     vi.spyOn(CloudAccountRepo, 'addAccount').mockResolvedValue();
 
-    const account = await CloudAccountRepo.syncFromIde();
+    const account = await IdeAccountImportAdapter.syncFromIde();
 
     expect(GoogleAPIService.getUserInfo).toHaveBeenCalledWith(accessToken);
     expect(account?.email).toBe('retry@example.com');
@@ -515,7 +517,7 @@ describe('CloudAccountRepo.syncFromIde', () => {
     vi.spyOn(CloudAccountRepo, 'getAccounts').mockResolvedValue([]);
     vi.spyOn(CloudAccountRepo, 'addAccount').mockResolvedValue();
 
-    const account = await CloudAccountRepo.syncFromIde('ide');
+    const account = await IdeAccountImportAdapter.syncFromIde('ide');
 
     expect(account?.email).toBe('second-db@example.com');
     expect(GoogleAPIService.getUserInfo).toHaveBeenCalledWith(accessToken);
@@ -548,7 +550,7 @@ describe('CloudAccountRepo.syncFromIde', () => {
     vi.spyOn(CloudAccountRepo, 'getAccounts').mockResolvedValue([]);
     const addAccountSpy = vi.spyOn(CloudAccountRepo, 'addAccount').mockResolvedValue();
 
-    const account = await CloudAccountRepo.syncFromIde('ide');
+    const account = await IdeAccountImportAdapter.syncFromIde('ide');
 
     expect(GoogleAPIService.refreshAccessToken).toHaveBeenCalledWith(refreshToken);
     expect(GoogleAPIService.getUserInfo).toHaveBeenNthCalledWith(1, staleAccessToken);
@@ -578,8 +580,8 @@ describe('CloudAccountRepo.syncFromIde', () => {
       isNewVersion: () => false,
     }));
 
-    const { CloudAccountRepo: RepoWithMock } =
-      await import('@/modules/cloud-account/persistence/cloudHandler');
+    const { CredentialStoreInjectionAdapter: AdapterWithMock } =
+      await import('@/modules/cloud-account/persistence/credential-store-injection-adapter');
     const accessToken = 'access-new';
     const refreshToken = 'refresh-new';
 
@@ -588,7 +590,7 @@ describe('CloudAccountRepo.syncFromIde', () => {
       ProtobufUtils.createOAuthTokenInfo('old-access', 'old-refresh', 1699999999),
     ).toString('base64');
 
-    RepoWithMock.injectCloudToken({
+    AdapterWithMock.injectCloudToken({
       id: 'id',
       provider: 'google',
       email: 'test@example.com',
@@ -648,10 +650,10 @@ describe('CloudAccountRepo.syncFromIde', () => {
     mockData['antigravityUnifiedStateSync.oauthToken'] =
       Buffer.from(existingTopic).toString('base64');
 
-    const { CloudAccountRepo: RepoWithMock } =
-      await import('@/modules/cloud-account/persistence/cloudHandler');
+    const { CredentialStoreInjectionAdapter: AdapterWithMock } =
+      await import('@/modules/cloud-account/persistence/credential-store-injection-adapter');
 
-    RepoWithMock.injectCloudToken(
+    AdapterWithMock.injectCloudToken(
       {
         id: 'id',
         provider: 'google',
@@ -716,10 +718,10 @@ describe('CloudAccountRepo.syncFromIde', () => {
       ProtobufUtils.createOAuthTokenInfo('legacy-access', 'legacy-refresh', 1699999999),
     ).toString('base64');
 
-    const { CloudAccountRepo: RepoWithMock } =
-      await import('@/modules/cloud-account/persistence/cloudHandler');
+    const { CredentialStoreInjectionAdapter: AdapterWithMock } =
+      await import('@/modules/cloud-account/persistence/credential-store-injection-adapter');
 
-    RepoWithMock.injectCloudToken(
+    AdapterWithMock.injectCloudToken(
       {
         id: 'id',
         provider: 'google',
@@ -860,10 +862,10 @@ describe('CloudAccountRepo.syncFromIde', () => {
       isNewVersion: () => true,
     }));
 
-    const { CloudAccountRepo: RepoWithMock } =
-      await import('@/modules/cloud-account/persistence/cloudHandler');
+    const { CredentialStoreInjectionAdapter: AdapterWithMock } =
+      await import('@/modules/cloud-account/persistence/credential-store-injection-adapter');
 
-    expect(RepoWithMock.shouldInjectTokenIntoCredentialStore('classic')).toBe(false);
+    expect(AdapterWithMock.shouldInjectTokenIntoCredentialStore('classic')).toBe(false);
   });
 
   it('should always route agy CLI token injection to credential store', async () => {
@@ -877,10 +879,10 @@ describe('CloudAccountRepo.syncFromIde', () => {
       isNewVersion: () => true,
     }));
 
-    const { CloudAccountRepo: RepoWithMock } =
-      await import('@/modules/cloud-account/persistence/cloudHandler');
+    const { CredentialStoreInjectionAdapter: AdapterWithMock } =
+      await import('@/modules/cloud-account/persistence/credential-store-injection-adapter');
 
-    expect(RepoWithMock.shouldInjectTokenIntoCredentialStore('agy')).toBe(true);
+    expect(AdapterWithMock.shouldInjectTokenIntoCredentialStore('agy')).toBe(true);
   });
 
   it('should allow the known Linux Chromium version output workaround', async () => {
@@ -894,17 +896,17 @@ describe('CloudAccountRepo.syncFromIde', () => {
       isNewVersion: () => true,
     }));
 
-    const { CloudAccountRepo: RepoWithMock } =
-      await import('@/modules/cloud-account/persistence/cloudHandler');
+    const { CredentialStoreInjectionAdapter: AdapterWithMock } =
+      await import('@/modules/cloud-account/persistence/credential-store-injection-adapter');
 
-    expect(RepoWithMock.shouldInjectTokenIntoCredentialStore('classic')).toBe(true);
+    expect(AdapterWithMock.shouldInjectTokenIntoCredentialStore('classic')).toBe(true);
   });
 
   it('should route Classic Antigravity 2.0+ token injection to credential store', () => {
     const shouldInjectTokenIntoCredentialStoreSpy = vi
-      .spyOn(CloudAccountRepo, 'shouldInjectTokenIntoCredentialStore')
+      .spyOn(CredentialStoreInjectionAdapter, 'shouldInjectTokenIntoCredentialStore')
       .mockReturnValueOnce(true);
-    const injectCloudTokenSpy = vi.spyOn(CloudAccountRepo, 'injectCloudToken');
+    const injectCloudTokenSpy = vi.spyOn(CredentialStoreInjectionAdapter, 'injectCloudToken');
 
     const account = {
       id: 'id',
@@ -926,16 +928,21 @@ describe('CloudAccountRepo.syncFromIde', () => {
       is_active: true,
     };
 
-    expect(CloudAccountRepo.injectCloudTokenWithStorageStrategy(account)).toBe('credential-store');
+    expect(CredentialStoreInjectionAdapter.injectCloudTokenWithStorageStrategy(account)).toBe(
+      'credential-store',
+    );
     expect(shouldInjectTokenIntoCredentialStoreSpy).toHaveBeenCalledWith(undefined);
     expect(writeAntigravityCredentialStoreToken).toHaveBeenCalledWith(account.token);
     expect(injectCloudTokenSpy).not.toHaveBeenCalled();
   });
 
   it('should route Antigravity IDE token injection to SQLite target', () => {
-    vi.spyOn(CloudAccountRepo, 'shouldInjectTokenIntoCredentialStore').mockReturnValueOnce(false);
+    vi.spyOn(
+      CredentialStoreInjectionAdapter,
+      'shouldInjectTokenIntoCredentialStore',
+    ).mockReturnValueOnce(false);
     const injectCloudTokenSpy = vi
-      .spyOn(CloudAccountRepo, 'injectCloudToken')
+      .spyOn(CredentialStoreInjectionAdapter, 'injectCloudToken')
       .mockImplementationOnce(() => undefined);
 
     const account = {
@@ -958,7 +965,9 @@ describe('CloudAccountRepo.syncFromIde', () => {
       is_active: true,
     };
 
-    expect(CloudAccountRepo.injectCloudTokenWithStorageStrategy(account, 'ide')).toBe('sqlite');
+    expect(
+      CredentialStoreInjectionAdapter.injectCloudTokenWithStorageStrategy(account, 'ide'),
+    ).toBe('sqlite');
     expect(injectCloudTokenSpy).toHaveBeenCalledWith(account, 'ide');
   });
 });
@@ -1043,15 +1052,31 @@ describe('cloud switch fail-fast path', () => {
     vi.doMock('@/modules/cloud-account/persistence/cloudHandler', () => ({
       CloudAccountRepo: {
         getAccount: vi.fn(async () => account),
-        setDeviceBinding: vi.fn(),
         updateToken: updateTokenMock,
+        updateLastUsed: vi.fn(),
+        setActive: vi.fn(),
+      },
+    }));
+
+    vi.doMock('@/modules/cloud-account/persistence/cloud-account-device-binding-store', () => ({
+      CloudAccountDeviceBindingStore: {
+        setDeviceBinding: vi.fn(),
+      },
+    }));
+
+    vi.doMock('@/modules/cloud-account/persistence/cloud-account-settings-store', () => ({
+      CloudAccountSettingsStore: {
+        getSetting: vi.fn(() => 'en'),
+        setActiveForTarget: vi.fn(),
+      },
+    }));
+
+    vi.doMock('@/modules/cloud-account/persistence/credential-store-injection-adapter', () => ({
+      CredentialStoreInjectionAdapter: {
         shouldInjectTokenIntoCredentialStore: vi.fn(() => false),
         injectCloudTokenWithStorageStrategy: vi.fn(() => {
           throw new Error('inject_failed');
         }),
-        updateLastUsed: vi.fn(),
-        setActive: vi.fn(),
-        getSetting: vi.fn(() => 'en'),
       },
     }));
 
@@ -1184,7 +1209,11 @@ describe('cloud oauth client key backfill', () => {
       CloudAccountRepo: {
         getAccounts: vi.fn(async () => accounts),
         updateToken: vi.fn(),
-        shouldInjectTokenIntoCredentialStore: vi.fn(() => true),
+      },
+    }));
+
+    vi.doMock('@/modules/cloud-account/persistence/cloud-account-settings-store', () => ({
+      CloudAccountSettingsStore: {
         getActiveAccountIdForTarget: vi.fn((target: string) =>
           target === 'classic' ? 'acc-2' : '',
         ),
@@ -1195,6 +1224,12 @@ describe('cloud oauth client key backfill', () => {
           return defaultValue;
         }),
         setSetting: vi.fn(),
+      },
+    }));
+
+    vi.doMock('@/modules/cloud-account/persistence/credential-store-injection-adapter', () => ({
+      CredentialStoreInjectionAdapter: {
+        shouldInjectTokenIntoCredentialStore: vi.fn(() => true),
       },
     }));
 
@@ -1282,7 +1317,11 @@ describe('cloud oauth client key backfill', () => {
       CloudAccountRepo: {
         getAccounts: vi.fn(async () => accounts),
         updateToken: vi.fn(),
-        shouldInjectTokenIntoCredentialStore: vi.fn(() => true),
+      },
+    }));
+
+    vi.doMock('@/modules/cloud-account/persistence/cloud-account-settings-store', () => ({
+      CloudAccountSettingsStore: {
         getActiveAccountIdForTarget: vi.fn((target: string) =>
           target === 'classic' ? 'acc-2' : '',
         ),
@@ -1293,6 +1332,12 @@ describe('cloud oauth client key backfill', () => {
           return defaultValue;
         }),
         setSetting: vi.fn(),
+      },
+    }));
+
+    vi.doMock('@/modules/cloud-account/persistence/credential-store-injection-adapter', () => ({
+      CredentialStoreInjectionAdapter: {
+        shouldInjectTokenIntoCredentialStore: vi.fn(() => true),
       },
     }));
 
@@ -1374,7 +1419,11 @@ describe('cloud oauth client key backfill', () => {
       CloudAccountRepo: {
         getAccounts: vi.fn(async () => accounts),
         updateToken: updateTokenMock,
-        shouldInjectTokenIntoCredentialStore: vi.fn(() => false),
+      },
+    }));
+
+    vi.doMock('@/modules/cloud-account/persistence/cloud-account-settings-store', () => ({
+      CloudAccountSettingsStore: {
         getActiveAccountIdForTarget: vi.fn(() => ''),
         getSetting: vi.fn((key: string, defaultValue: unknown) => {
           if (key === 'oauth_client_key_backfill_v1_done') {
@@ -1386,6 +1435,12 @@ describe('cloud oauth client key backfill', () => {
           return defaultValue;
         }),
         setSetting: setSettingMock,
+      },
+    }));
+
+    vi.doMock('@/modules/cloud-account/persistence/credential-store-injection-adapter', () => ({
+      CredentialStoreInjectionAdapter: {
+        shouldInjectTokenIntoCredentialStore: vi.fn(() => false),
       },
     }));
 
@@ -1466,7 +1521,11 @@ describe('cloud oauth client key backfill', () => {
       CloudAccountRepo: {
         getAccounts: vi.fn(async () => accounts),
         updateToken: updateTokenMock,
-        shouldInjectTokenIntoCredentialStore: vi.fn(() => false),
+      },
+    }));
+
+    vi.doMock('@/modules/cloud-account/persistence/cloud-account-settings-store', () => ({
+      CloudAccountSettingsStore: {
         getActiveAccountIdForTarget: vi.fn(() => ''),
         getSetting: vi.fn((key: string, defaultValue: unknown) => {
           if (key === 'oauth_client_key_backfill_v1_done') {
@@ -1478,6 +1537,12 @@ describe('cloud oauth client key backfill', () => {
           return defaultValue;
         }),
         setSetting: setSettingMock,
+      },
+    }));
+
+    vi.doMock('@/modules/cloud-account/persistence/credential-store-injection-adapter', () => ({
+      CredentialStoreInjectionAdapter: {
+        shouldInjectTokenIntoCredentialStore: vi.fn(() => false),
       },
     }));
 

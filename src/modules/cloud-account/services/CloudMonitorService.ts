@@ -1,5 +1,6 @@
 import { Notification } from 'electron';
 import { CloudAccountRepo } from '@/modules/cloud-account/persistence/cloudHandler';
+import { CloudAccountSettingsStore } from '@/modules/cloud-account/persistence/cloud-account-settings-store';
 import { GoogleAPIService, type TokenResponse } from './GoogleAPIService';
 import { AutoSwitchService } from './AutoSwitchService';
 import { logger } from '@/shared/logging/logger';
@@ -271,10 +272,16 @@ export class CloudMonitorService {
       }
 
       // 4. Check for Quota Alerts
-      const alertEnabled = CloudAccountRepo.getSetting<boolean>('quota_alert_enabled', false);
-      const alertThreshold = CloudAccountRepo.getSetting<number>('quota_alert_threshold', 20);
+      const alertEnabled = CloudAccountSettingsStore.getSetting<boolean>(
+        'quota_alert_enabled',
+        false,
+      );
+      const alertThreshold = CloudAccountSettingsStore.getSetting<number>(
+        'quota_alert_threshold',
+        20,
+      );
       const notificationLanguage = getCloudMonitorLanguage(
-        CloudAccountRepo.getSetting<string>('language', 'en'),
+        CloudAccountSettingsStore.getSetting<string>('language', 'en'),
       );
       const notificationText = CLOUD_MONITOR_NOTIFICATION_TEXT[notificationLanguage];
 

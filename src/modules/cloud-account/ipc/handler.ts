@@ -1,5 +1,8 @@
 import { v4 as uuidv4 } from 'uuid';
 import { CloudAccountRepo } from '@/modules/cloud-account/persistence/cloudHandler';
+import { CredentialStoreInjectionAdapter } from '@/modules/cloud-account/persistence/credential-store-injection-adapter';
+import { CloudAccountDeviceBindingStore } from '@/modules/cloud-account/persistence/cloud-account-device-binding-store';
+import { CloudAccountSettingsStore } from '@/modules/cloud-account/persistence/cloud-account-settings-store';
 import {
   GoogleAPIService,
   type OAuthClientDescriptor,
@@ -39,7 +42,7 @@ function notifyTrayUpdate(account: CloudAccount) {
   try {
     // Fetch language setting. Default to 'en' if not set.
 
-    const lang = CloudAccountRepo.getSetting<string>('language', 'en');
+    const lang = CloudAccountSettingsStore.getSetting<string>('language', 'en');
     updateTrayMenu(account, lang);
   } catch (error) {
     logger.warn('Failed to update tray after cloud account update', error);
@@ -186,7 +189,7 @@ async function clearAccountStatus(account: CloudAccount): Promise<void> {
 }
 
 function hydrateActiveOAuthClientFromSettings(): void {
-  const preferredClientKey = CloudAccountRepo.getSetting<string>(
+  const preferredClientKey = CloudAccountSettingsStore.getSetting<string>(
     ACTIVE_OAUTH_CLIENT_KEY_SETTING,
     '',
   );
@@ -198,7 +201,7 @@ function hydrateActiveOAuthClientFromSettings(): void {
         `[OAuth] Stored active OAuth client '${preferredClientKey}' is invalid, falling back to default`,
         error,
       );
-      CloudAccountRepo.setSetting(ACTIVE_OAUTH_CLIENT_KEY_SETTING, '');
+      CloudAccountSettingsStore.setSetting(ACTIVE_OAUTH_CLIENT_KEY_SETTING, '');
     }
   }
 }
@@ -206,7 +209,7 @@ function hydrateActiveOAuthClientFromSettings(): void {
 async function backfillMissingOAuthClientKeyForLegacyAccounts(
   accounts: CloudAccount[],
 ): Promise<boolean> {
-  const backfillDone = CloudAccountRepo.getSetting<boolean>(
+  const backfillDone = CloudAccountSettingsStore.getSetting<boolean>(
     OAUTH_CLIENT_KEY_BACKFILL_DONE_SETTING,
     false,
   );
@@ -262,7 +265,7 @@ async function backfillMissingOAuthClientKeyForLegacyAccounts(
   }
 
   if (!hasFailure) {
-    CloudAccountRepo.setSetting(OAUTH_CLIENT_KEY_BACKFILL_DONE_SETTING, true);
+    CloudAccountSettingsStore.setSetting(OAUTH_CLIENT_KEY_BACKFILL_DONE_SETTING, true);
   }
 
   logger.info(
@@ -376,9 +379,9 @@ export async function listCloudAccounts(): Promise<CloudAccount[]> {
     logger.warn('Failed to read current classic account info during listing', err);
   }
   const classicUsesCredentialStore =
-    CloudAccountRepo.shouldInjectTokenIntoCredentialStore('classic');
+    CredentialStoreInjectionAdapter.shouldInjectTokenIntoCredentialStore('classic');
   const activeClassicAccountId = classicUsesCredentialStore
-    ? CloudAccountRepo.getActiveAccountIdForTarget('classic')
+    ? CloudAccountSettingsStore.getActiveAccountIdForTarget('classic')
     : '';
   try {
     const ideInfo = getCurrentAccountInfo('ide');
@@ -388,8 +391,10 @@ export async function listCloudAccounts(): Promise<CloudAccount[]> {
   } catch (err) {
     logger.warn('Failed to read current ide account info during listing', err);
   }
-  const activeIdeAccountId = ideEmail ? '' : CloudAccountRepo.getActiveAccountIdForTarget('ide');
-  const activeAgyAccountId = CloudAccountRepo.getActiveAccountIdForTarget('agy');
+  const activeIdeAccountId = ideEmail
+    ? ''
+    : CloudAccountSettingsStore.getActiveAccountIdForTarget('ide');
+  const activeAgyAccountId = CloudAccountSettingsStore.getActiveAccountIdForTarget('agy');
 
   return accounts.map((account) => {
     const accountEmail = normalizeAccountEmail(account.email);
@@ -577,7 +582,8 @@ export async function switchCloudAccount(
       }
 
       logger.info(`Switching to cloud account: ${account.email} (${account.id})`);
-      const usesCredentialStore = CloudAccountRepo.shouldInjectTokenIntoCredentialStore(appTarget);
+      const usesCredentialStore =
+        CredentialStoreInjectionAdapter.shouldInjectTokenIntoCredentialStore(appTarget);
       await withTimingTrace(
         'switch.cloud.prepare',
         {
@@ -596,7 +602,11 @@ export async function switchCloudAccount(
 
             if (!account.device_profile) {
               const generated = generateDeviceProfile();
-              CloudAccountRepo.setDeviceBinding(account.id, generated, 'auto_generated');
+              CloudAccountDeviceBindingStore.setDeviceBinding(
+                account.id,
+                generated,
+                'auto_generated',
+              );
               saveGlobalOriginalProfile(generated);
               account.device_profile = generated;
             }
@@ -676,12 +686,12 @@ export async function switchCloudAccount(
           }
 
           // 4. Inject Token
-          CloudAccountRepo.injectCloudTokenWithStorageStrategy(account, appTarget);
+          CredentialStoreInjectionAdapter.injectCloudTokenWithStorageStrategy(account, appTarget);
         },
         afterSwitchSuccess: async () => {
           CloudAccountRepo.updateLastUsed(account.id);
           CloudAccountRepo.setActive(account.id);
-          CloudAccountRepo.setActiveForTarget(appTarget, account.id);
+          CloudAccountSettingsStore.setActiveForTarget(appTarget, account.id);
           await clearAccountStatus(account);
 
           logger.info(`Successfully switched to cloud account: ${account.email}`);
@@ -738,7 +748,7 @@ export async function bindCloudIdentityProfile(
 
   ensureGlobalOriginalFromCurrentStorage();
   saveGlobalOriginalProfile(profile);
-  CloudAccountRepo.setDeviceBinding(account.id, profile, mode);
+  CloudAccountDeviceBindingStore.setDeviceBinding(account.id, profile, mode);
 
   return profile;
 }
@@ -754,7 +764,7 @@ export async function bindCloudIdentityProfileWithPayload(
 
   ensureGlobalOriginalFromCurrentStorage();
   saveGlobalOriginalProfile(profile);
-  CloudAccountRepo.setDeviceBinding(account.id, profile, 'generated');
+  CloudAccountDeviceBindingStore.setDeviceBinding(account.id, profile, 'generated');
 
   return profile;
 }
@@ -764,7 +774,7 @@ export async function restoreCloudIdentityProfileRevision(
   versionId: string,
 ): Promise<DeviceProfile> {
   const baseline = loadGlobalOriginalProfile();
-  return CloudAccountRepo.restoreDeviceVersion(accountId, versionId, baseline);
+  return CloudAccountDeviceBindingStore.restoreDeviceVersion(accountId, versionId, baseline);
 }
 
 export async function restoreCloudBaselineProfile(accountId: string): Promise<DeviceProfile> {
@@ -772,14 +782,14 @@ export async function restoreCloudBaselineProfile(accountId: string): Promise<De
   if (!baseline) {
     throw new Error('Global original profile not found');
   }
-  return CloudAccountRepo.restoreDeviceVersion(accountId, 'baseline', baseline);
+  return CloudAccountDeviceBindingStore.restoreDeviceVersion(accountId, 'baseline', baseline);
 }
 
 export async function deleteCloudIdentityProfileRevision(
   accountId: string,
   versionId: string,
 ): Promise<void> {
-  CloudAccountRepo.deleteDeviceVersion(accountId, versionId);
+  CloudAccountDeviceBindingStore.deleteDeviceVersion(accountId, versionId);
 }
 
 export async function openCloudIdentityStorageFolder(): Promise<void> {
@@ -791,11 +801,11 @@ export async function openCloudIdentityStorageFolder(): Promise<void> {
 }
 
 export function getAutoSwitchEnabled(): boolean {
-  return CloudAccountRepo.getSetting<boolean>('auto_switch_enabled', false);
+  return CloudAccountSettingsStore.getSetting<boolean>('auto_switch_enabled', false);
 }
 
 export async function setAutoSwitchEnabled(enabled: boolean): Promise<void> {
-  CloudAccountRepo.setSetting('auto_switch_enabled', enabled);
+  CloudAccountSettingsStore.setSetting('auto_switch_enabled', enabled);
   // Trigger an immediate check if enabled
   if (enabled) {
     const { CloudMonitorService } =
@@ -836,7 +846,7 @@ export function getActiveOAuthClient(): string {
 
 export function setActiveOAuthClient(clientKey: string): void {
   GoogleAPIService.setActiveOAuthClientKey(clientKey);
-  CloudAccountRepo.setSetting(
+  CloudAccountSettingsStore.setSetting(
     ACTIVE_OAUTH_CLIENT_KEY_SETTING,
     GoogleAPIService.getActiveOAuthClientKey(),
   );

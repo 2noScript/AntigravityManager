@@ -4,6 +4,11 @@ import type { CloudAccount, CloudQuotaData } from '@/modules/cloud-account/types
 vi.mock('@/modules/cloud-account/persistence/cloudHandler', () => ({
   CloudAccountRepo: {
     getAccounts: vi.fn(),
+  },
+}));
+
+vi.mock('@/modules/cloud-account/persistence/cloud-account-settings-store', () => ({
+  CloudAccountSettingsStore: {
     getSetting: vi.fn(),
     getActiveAccountIdForTarget: vi.fn(),
   },

@@ -18,6 +18,7 @@ import {
 } from './modules/app-shell/utils/installNotice';
 import { applyStartupGpuSwitches } from '@/modules/app-shell/utils/startupGpuSwitches';
 import { CloudAccountRepo } from '@/modules/cloud-account/persistence/cloudHandler';
+import { CloudAccountSettingsStore } from '@/modules/cloud-account/persistence/cloud-account-settings-store';
 import { initDatabase } from '@/shared/persistence/database/handler';
 import { CloudMonitorService } from '@/modules/cloud-account/services/CloudMonitorService';
 
@@ -633,7 +634,7 @@ app
         }
       }
 
-      const enabled = CloudAccountRepo.getSetting('auto_switch_enabled', false);
+      const enabled = CloudAccountSettingsStore.getSetting('auto_switch_enabled', false);
       if (enabled) {
         logger.info('Startup: Auto-Switch enabled, starting monitor...');
         CloudMonitorService.start();
