@@ -4,7 +4,7 @@ import { CloudAccountRepo } from '@/modules/cloud-account/persistence/cloudHandl
 import { CloudAccountSettingsStore } from '@/modules/cloud-account/persistence/cloud-account-settings-store';
 import { GoogleAPIService } from '@/modules/cloud-account/services/GoogleAPIService';
 import { AutoSwitchService } from '@/modules/cloud-account/services/AutoSwitchService';
-import { TokenManagerService } from '../../modules/proxy-gateway/server/token-manager.service';
+import { AccountLeaseService } from '../../modules/proxy-gateway/server/account-lease.service';
 import { logger } from '../../shared/logging/logger';
 import * as electronMock from 'electron';
 
@@ -329,7 +329,7 @@ describe('CloudMonitorService AI credits alert', () => {
   });
 });
 
-describe('TokenManagerService project-id hydration', () => {
+describe('AccountLeaseService project-id hydration', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useRealTimers();
@@ -356,7 +356,7 @@ describe('TokenManagerService project-id hydration', () => {
     vi.mocked(CloudAccountRepo.updateToken).mockResolvedValue(undefined as never);
     vi.mocked(GoogleAPIService.fetchProjectId).mockResolvedValue('resolved-project' as never);
 
-    const service = new TokenManagerService();
+    const service = new AccountLeaseService();
     const selectedToken = await service.getNextToken();
 
     expect(GoogleAPIService.fetchProjectId).toHaveBeenCalledWith('access-token');
@@ -389,7 +389,7 @@ describe('TokenManagerService project-id hydration', () => {
     vi.mocked(CloudAccountRepo.getAccounts).mockResolvedValue([account] as never);
     vi.mocked(GoogleAPIService.fetchProjectId).mockResolvedValue('new-project' as never);
 
-    const service = new TokenManagerService();
+    const service = new AccountLeaseService();
     const selectedToken = await service.getNextToken();
 
     expect(GoogleAPIService.fetchProjectId).not.toHaveBeenCalled();
@@ -416,7 +416,7 @@ describe('TokenManagerService project-id hydration', () => {
     vi.mocked(CloudAccountRepo.getAccounts).mockResolvedValue([account] as never);
     vi.mocked(GoogleAPIService.fetchProjectId).mockResolvedValue(null as never);
 
-    const service = new TokenManagerService();
+    const service = new AccountLeaseService();
     const selectedToken = await service.getNextToken();
 
     expect(GoogleAPIService.fetchProjectId).toHaveBeenCalledWith('access-token-3');
@@ -446,7 +446,7 @@ describe('TokenManagerService project-id hydration', () => {
     vi.mocked(CloudAccountRepo.updateToken).mockResolvedValue(undefined as never);
     vi.mocked(GoogleAPIService.fetchProjectId).mockResolvedValue('resolved-project-4' as never);
 
-    const service = new TokenManagerService();
+    const service = new AccountLeaseService();
     const selectedToken = await service.getNextToken();
 
     expect(GoogleAPIService.fetchProjectId).toHaveBeenCalledWith('access-token-4');

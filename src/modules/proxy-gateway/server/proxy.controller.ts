@@ -30,7 +30,7 @@ import {
   MODEL_LIST_OWNER,
 } from '../antigravity/ModelMapping';
 import { getServerConfig } from '../../../server/server-config';
-import { TokenManagerService } from './token-manager.service';
+import { AccountLeaseService } from './account-lease.service';
 
 @Controller('v1')
 @UseGuards(ProxyGuard)
@@ -39,7 +39,9 @@ export class ProxyController {
 
   constructor(
     @Inject(ProxyService) private readonly proxyService: ProxyService,
-    @Optional() @Inject(TokenManagerService) private readonly tokenManager?: TokenManagerService,
+    @Optional()
+    @Inject(AccountLeaseService)
+    private readonly accountLeaseService?: AccountLeaseService,
   ) {}
 
   @Get('models')
@@ -49,7 +51,7 @@ export class ProxyController {
       const customMapping = config?.custom_mapping ?? {};
       const modelIds = getAllDynamicModels(
         customMapping,
-        this.tokenManager?.getAllCollectedModels(),
+        this.accountLeaseService?.getAllCollectedModels(),
       );
 
       const data = modelIds.map((id) => ({
@@ -720,11 +722,7 @@ export class ProxyController {
   }
 
   private writeSseResponse(res: FastifyReply, stream: Observable<unknown>): void {
-    if (
-      !res.raw ||
-      !isFunction(res.raw.writeHead) ||
-      !isFunction(res.raw.write)
-    ) {
+    if (!res.raw || !isFunction(res.raw.writeHead) || !isFunction(res.raw.write)) {
       res.header('Content-Type', 'text/event-stream');
       res.header('Cache-Control', 'no-cache');
       res.header('Connection', 'keep-alive');

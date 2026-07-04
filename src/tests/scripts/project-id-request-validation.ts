@@ -3,9 +3,9 @@ import { isEmpty, isString } from 'lodash-es';
 
 import { transformClaudeRequestIn } from '../../modules/proxy-gateway/antigravity/ClaudeRequestMapper';
 import { ProxyService } from '../../modules/proxy-gateway/server/proxy.service';
-import { TokenManagerService } from '../../modules/proxy-gateway/server/token-manager.service';
+import { AccountLeaseService } from '../../modules/proxy-gateway/server/account-lease.service';
 
-const mockTokenManager: any = {
+const mockAccountLease: any = {
   getNextToken: async () => null,
   markAsRateLimited: () => undefined,
   markAsForbidden: () => undefined,
@@ -20,7 +20,7 @@ const mockGeminiClient: any = {
 
 class TestableProxyService extends ProxyService {
   constructor() {
-    super(mockTokenManager, mockGeminiClient);
+    super(mockAccountLease, mockGeminiClient);
   }
 
   public createGeminiInternal(
@@ -148,11 +148,11 @@ async function validateProxyInternalBuilder(): Promise<void> {
 
 async function validateRuntimeGeminiRequestPath(): Promise<void> {
   const service = new TestableProxyService();
-  const originalGetNextToken = mockTokenManager.getNextToken;
+  const originalGetNextToken = mockAccountLease.getNextToken;
   const originalGenerateInternal = mockGeminiClient.generateInternal;
   let capturedBody: Record<string, unknown> | null = null;
 
-  mockTokenManager.getNextToken = async () => ({
+  mockAccountLease.getNextToken = async () => ({
     id: 'account-1',
     email: 'project-test@example.com',
     token: {
@@ -188,7 +188,7 @@ async function validateRuntimeGeminiRequestPath(): Promise<void> {
       contents: [{ role: 'user', parts: [{ text: 'hello' }] }],
     } as any);
   } finally {
-    mockTokenManager.getNextToken = originalGetNextToken;
+    mockAccountLease.getNextToken = originalGetNextToken;
     mockGeminiClient.generateInternal = originalGenerateInternal;
   }
 
@@ -200,7 +200,7 @@ async function validateRuntimeGeminiRequestPath(): Promise<void> {
   assert.ok(!Object.prototype.hasOwnProperty.call(capturedBody, 'project'));
 }
 
-async function validateRuntimeAnthropicRequestFromRealTokenManager(): Promise<void> {
+async function validateRuntimeAnthropicRequestFromRealAccountLease(): Promise<void> {
   const originalGenerateInternal = mockGeminiClient.generateInternal;
 
   let capturedBody: Record<string, unknown> | null = null;
@@ -224,35 +224,35 @@ async function validateRuntimeAnthropicRequestFromRealTokenManager(): Promise<vo
     };
   };
 
-  const realTokenManager = new TokenManagerService();
-  await realTokenManager.onModuleInit();
+  const realAccountLease = new AccountLeaseService();
+  await realAccountLease.onModuleInit();
 
-  const tokenManagerProxy = {
+  const AccountLeaseProxy = {
     getNextToken: async (options?: {
       sessionKey?: string;
       excludeAccountIds?: string[];
       model?: string;
     }) => {
       observedGetNextTokenOptions = options ?? null;
-      selectedToken = await realTokenManager.getNextToken(options);
+      selectedToken = await realAccountLease.getNextToken(options);
       return selectedToken;
     },
     markAsRateLimited: (accountIdOrEmail: string) =>
-      realTokenManager.markAsRateLimited(accountIdOrEmail),
+      realAccountLease.markAsRateLimited(accountIdOrEmail),
     markAsForbidden: (accountIdOrEmail: string) =>
-      realTokenManager.markAsForbidden(accountIdOrEmail),
+      realAccountLease.markAsForbidden(accountIdOrEmail),
     markFromUpstreamError: (args: {
       accountIdOrEmail: string;
       status?: number;
       retryAfter?: string;
       body?: string;
       model?: string;
-    }) => realTokenManager.markFromUpstreamError(args),
-    recordParityError: () => realTokenManager.recordParityError(),
+    }) => realAccountLease.markFromUpstreamError(args),
+    recordParityError: () => realAccountLease.recordParityError(),
   };
 
   try {
-    const service = new ProxyService(tokenManagerProxy as any, mockGeminiClient as any);
+    const service = new ProxyService(AccountLeaseProxy as any, mockGeminiClient as any);
     await service.handleAnthropicMessages({
       model: 'claude-sonnet-4-5',
       stream: false,
@@ -260,27 +260,25 @@ async function validateRuntimeAnthropicRequestFromRealTokenManager(): Promise<vo
       metadata: {
         session_id: 'project-chain-debug-session',
       },
-      messages: [{ role: 'user', content: 'hello from real token manager chain' }],
+      messages: [{ role: 'user', content: 'hello from real account lease chain' }],
     } as any);
   } finally {
     mockGeminiClient.generateInternal = originalGenerateInternal;
   }
 
-  assert.ok(selectedToken, 'Expected TokenManagerService.getNextToken to return a token');
+  assert.ok(selectedToken, 'Expected AccountLeaseService.getNextToken to return a token');
   assert.ok(capturedBody, 'Expected captured Gemini internal request');
 
   const captured = capturedBody as Record<string, unknown>;
   const tokenProjectId = selectedToken?.token?.project_id;
   const normalizedTokenProjectId =
-    isString(tokenProjectId) && !isEmpty(tokenProjectId.trim())
-      ? tokenProjectId.trim()
-      : undefined;
+    isString(tokenProjectId) && !isEmpty(tokenProjectId.trim()) ? tokenProjectId.trim() : undefined;
 
   if (normalizedTokenProjectId) {
     assert.equal(
       captured['project'],
       normalizedTokenProjectId,
-      'Expected project field to come from tokenManager.getNextToken().token.project_id',
+      'Expected project field to come from AccountLease.getNextToken().token.project_id',
     );
   } else {
     assert.ok(
@@ -294,7 +292,7 @@ async function validateRuntimeAnthropicRequestFromRealTokenManager(): Promise<vo
     JSON.stringify(observedGetNextTokenOptions, null, 2),
   );
   console.log(
-    '[DEBUG] Selected token project_id from TokenManagerService:',
+    '[DEBUG] Selected token project_id from AccountLeaseService:',
     tokenProjectId ?? null,
   );
   console.log(
@@ -355,8 +353,8 @@ async function main(): Promise<void> {
   await validateRuntimeGeminiRequestPath();
   console.log('[PASS] Runtime Gemini request path omits empty project');
 
-  await validateRuntimeAnthropicRequestFromRealTokenManager();
-  console.log('[PASS] Runtime Anthropic request uses project_id from TokenManagerService');
+  await validateRuntimeAnthropicRequestFromRealAccountLease();
+  console.log('[PASS] Runtime Anthropic request uses project_id from AccountLeaseService');
 
   if (process.argv.includes('--live')) {
     await validateLiveRequests();

@@ -3,7 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
 import { AppModule } from './app.module';
 import { logger } from '../shared/logging/logger';
-import { TokenManagerService } from '../modules/proxy-gateway/server/token-manager.service';
+import { AccountLeaseService } from '../modules/proxy-gateway/server/account-lease.service';
 
 import { ProxyConfig } from '@/modules/config/types';
 import { setServerConfig } from './server-config';
@@ -131,10 +131,10 @@ export async function getNestServerStatus(): Promise<{
 
   if (app) {
     try {
-      const tokenManager = app.get(TokenManagerService);
-      activeAccounts = tokenManager.getAccountCount();
+      const accountLeaseService = app.get(AccountLeaseService);
+      activeAccounts = accountLeaseService.getAccountCount();
     } catch (e) {
-      // TokenManager might not be available
+      // AccountLeaseService might not be available
     }
   }
 

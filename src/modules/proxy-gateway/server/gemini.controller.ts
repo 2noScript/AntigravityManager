@@ -19,7 +19,7 @@ import { ProxyService } from './proxy.service';
 import { GeminiRequest, GeminiResponse } from './interfaces/request-interfaces';
 import { getServerConfig } from '../../../server/server-config';
 import { getAllDynamicModels } from '../antigravity/ModelMapping';
-import { TokenManagerService } from './token-manager.service';
+import { AccountLeaseService } from './account-lease.service';
 
 type GeminiModelMetadata = {
   name: string;
@@ -39,7 +39,9 @@ type GeminiModelMetadata = {
 export class GeminiController {
   constructor(
     @Inject(ProxyService) private readonly proxyService: ProxyService,
-    @Optional() @Inject(TokenManagerService) private readonly tokenManager?: TokenManagerService,
+    @Optional()
+    @Inject(AccountLeaseService)
+    private readonly accountLeaseService?: AccountLeaseService,
   ) {}
 
   @Get('models')
@@ -172,7 +174,7 @@ export class GeminiController {
     const config = getServerConfig();
     const dynamicModelIds = getAllDynamicModels(
       config?.custom_mapping ?? {},
-      this.tokenManager?.getAllCollectedModels(),
+      this.accountLeaseService?.getAllCollectedModels(),
     );
 
     return dynamicModelIds.map((id) => this.toGeminiModelMetadata(`models/${id}`));
@@ -244,11 +246,7 @@ export class GeminiController {
   }
 
   private writeObservableSseResponse(res: FastifyReply, stream: Observable<unknown>): void {
-    if (
-      !res.raw ||
-      !isFunction(res.raw.writeHead) ||
-      !isFunction(res.raw.write)
-    ) {
+    if (!res.raw || !isFunction(res.raw.writeHead) || !isFunction(res.raw.write)) {
       res.header('Content-Type', 'text/event-stream');
       res.header('Cache-Control', 'no-cache');
       res.header('Connection', 'keep-alive');

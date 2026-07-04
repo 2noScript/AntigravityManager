@@ -1,6 +1,6 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { isEmpty, isFunction, isNil, isNumber, isPlainObject, isString } from 'lodash-es';
-import { TokenManagerService } from './token-manager.service';
+import { AccountLeaseService } from './account-lease.service';
 import { GeminiClient } from './clients/gemini.client';
 import { v4 as uuidv4 } from 'uuid';
 import { Observable } from 'rxjs';
@@ -13,7 +13,6 @@ import {
   GeminiInternalRequest,
   GeminiPart as InternalGeminiPart,
 } from '../antigravity/types';
-import { calculateRetryDelay, sleep } from '../antigravity/retry-utils';
 import { normalizeObjectJsonSchema } from '../antigravity/JsonSchemaUtils';
 import { classifyStreamError } from '../antigravity/stream-error-utils';
 import {
@@ -26,24 +25,15 @@ import {
   AnthropicContent,
 } from './interfaces/request-interfaces';
 import { getServerConfig } from '../../../server/server-config';
-import {
-  normalizeGeminiModelAlias,
-  resolveModelRoute,
-} from '../antigravity/ModelMapping';
-import { getMaxOutputTokens, getThinkingBudget } from '../antigravity/ModelSpecs';
 import { resolveRequestUserAgent } from './request-user-agent';
-import { UpstreamRequestError } from './clients/upstream-error';
-import {
-  GRACE_RETRY_BUFFER_MS,
-  parseRetryDelayMilliseconds,
-  shouldGraceRetry,
-} from './rate-limit-tracker';
 import { CloudAccount } from '@/modules/cloud-account/types';
-
-interface TokenRetryState {
-  attemptedAccountIds: Set<string>;
-  graceRetryToken: CloudAccount | null;
-}
+import { ProxyGenerationConstraints } from './proxy-generation-constraints';
+import {
+  ProxyRetryPolicy,
+  type ProxyTokenRetryState,
+  type ProxyUpstreamFailureClassification,
+} from './proxy-retry-policy';
+import { ProxyModelRoutingPolicy } from './proxy-model-routing-policy';
 
 interface StreamIdleTimer {
   reset: () => void;
@@ -55,11 +45,17 @@ interface StreamIdleTimer {
 export class ProxyService {
   private readonly logger = new Logger(ProxyService.name);
   private readonly streamIdleTimeoutMs = 300_000;
+  private readonly generationConstraints: ProxyGenerationConstraints;
+  private readonly retryPolicy: ProxyRetryPolicy;
+  private readonly modelRoutingPolicy = new ProxyModelRoutingPolicy();
 
   constructor(
-    @Inject(TokenManagerService) private readonly tokenManager: TokenManagerService,
+    @Inject(AccountLeaseService) private readonly accountLeaseService: AccountLeaseService,
     @Inject(GeminiClient) private readonly geminiClient: GeminiClient,
-  ) {}
+  ) {
+    this.generationConstraints = new ProxyGenerationConstraints(this.accountLeaseService);
+    this.retryPolicy = new ProxyRetryPolicy(this.accountLeaseService, this.logger);
+  }
 
   private createOfficialRequestId(): string {
     const timestampMs = Date.now();
@@ -125,36 +121,16 @@ export class ProxyService {
     };
   }
 
-  private createTokenRetryState(): TokenRetryState {
-    return {
-      attemptedAccountIds: new Set<string>(),
-      graceRetryToken: null,
-    };
+  private createTokenRetryState(): ProxyTokenRetryState {
+    return this.retryPolicy.createTokenRetryState();
   }
 
   private async selectRetryToken(
-    retryState: TokenRetryState,
+    retryState: ProxyTokenRetryState,
     model: string,
     sessionKey?: string,
   ): Promise<CloudAccount | null> {
-    const graceRetryToken = retryState.graceRetryToken;
-    retryState.graceRetryToken = null;
-
-    if (graceRetryToken) {
-      return graceRetryToken;
-    }
-
-    const token = await this.tokenManager.getNextToken({
-      sessionKey,
-      excludeAccountIds: Array.from(retryState.attemptedAccountIds),
-      model,
-    });
-    if (!token) {
-      return null;
-    }
-
-    retryState.attemptedAccountIds.add(token.id);
-    return token;
+    return this.retryPolicy.selectRetryToken(retryState, model, sessionKey);
   }
 
   private async waitBeforeRetry(
@@ -163,34 +139,16 @@ export class ProxyService {
     label: string,
     shouldSkipBackoff: boolean,
   ): Promise<void> {
-    if (attemptIndex === 0 || shouldSkipBackoff) {
-      return;
-    }
-
-    const delay = calculateRetryDelay(attemptIndex - 1);
-    this.logger.log(
-      `${label} retry ${attemptIndex + 1}/${maxRetries}, backoff=${delay}ms (jittered)`,
-    );
-    await sleep(delay);
+    await this.retryPolicy.waitBeforeRetry(attemptIndex, maxRetries, label, shouldSkipBackoff);
   }
 
   private async prepareGraceRetry(
-    retryState: TokenRetryState,
+    retryState: ProxyTokenRetryState,
     token: CloudAccount,
     error: unknown,
     label: string,
   ): Promise<boolean> {
-    const graceRetryDelay = this.resolveGraceRetryDelay(error);
-    if (graceRetryDelay === null) {
-      return false;
-    }
-
-    this.logger.log(
-      `${label} grace retry on same account ${token.id}, waiting ${graceRetryDelay}ms`,
-    );
-    await sleep(graceRetryDelay);
-    retryState.graceRetryToken = token;
-    return true;
+    return this.retryPolicy.prepareGraceRetry(retryState, token, error, label);
   }
 
   // --- Anthropic Handlers ---
@@ -218,7 +176,7 @@ export class ProxyService {
       if (!token) {
         throw new Error('No available accounts');
       }
-      const effectiveTargetModel = this.tokenManager.resolveDynamicModelForAccount(
+      const effectiveTargetModel = this.accountLeaseService.resolveDynamicModelForAccount(
         token.id,
         targetModel,
       );
@@ -458,7 +416,7 @@ export class ProxyService {
       if (!token) {
         throw new Error('No available accounts (all exhausted or rate limited)');
       }
-      const effectiveTargetModel = this.tokenManager.resolveDynamicModelForAccount(
+      const effectiveTargetModel = this.accountLeaseService.resolveDynamicModelForAccount(
         token.id,
         targetModel,
       );
@@ -548,7 +506,7 @@ export class ProxyService {
       if (!token) {
         throw new Error('No available accounts (all exhausted or rate limited)');
       }
-      const effectiveTargetModel = this.tokenManager.resolveDynamicModelForAccount(
+      const effectiveTargetModel = this.accountLeaseService.resolveDynamicModelForAccount(
         token.id,
         targetModel,
       );
@@ -648,49 +606,7 @@ export class ProxyService {
   }
 
   private normalizeGeminiModel(model: string): string {
-    return model.replace(/^models\//i, '');
-  }
-
-  private normalizeModelIdentifier(model: string): string {
-    return model.replace(/^models\//i, '').trim();
-  }
-
-  private resolveThinkingLevelBudget(level: string): number | undefined {
-    const normalized = level.trim().toUpperCase();
-    if (normalized === 'NONE') {
-      return 0;
-    }
-    if (normalized === 'LOW') {
-      return 4096;
-    }
-    if (normalized === 'MEDIUM') {
-      return 8192;
-    }
-    if (normalized === 'HIGH') {
-      return 24576;
-    }
-    return undefined;
-  }
-
-  private getModelOutputCap(accountId: string, model: string): number {
-    const normalizedModel = this.normalizeModelIdentifier(model);
-    const dynamicCap = this.tokenManager.getModelOutputLimitForAccount(accountId, normalizedModel);
-    if (isNumber(dynamicCap) && Number.isFinite(dynamicCap) && dynamicCap > 0) {
-      return Math.floor(dynamicCap);
-    }
-    return getMaxOutputTokens(normalizedModel);
-  }
-
-  private getModelThinkingBudget(accountId: string, model: string): number {
-    const normalizedModel = this.normalizeModelIdentifier(model);
-    const dynamicBudget = this.tokenManager.getModelThinkingBudgetForAccount(
-      accountId,
-      normalizedModel,
-    );
-    if (isNumber(dynamicBudget) && Number.isFinite(dynamicBudget) && dynamicBudget >= 0) {
-      return Math.floor(dynamicBudget);
-    }
-    return getThinkingBudget(normalizedModel);
+    return this.modelRoutingPolicy.normalizeGeminiModel(model);
   }
 
   private applyInternalGenerationConstraints(
@@ -698,75 +614,7 @@ export class ProxyService {
     model: string,
     accountId: string,
   ): void {
-    const generationConfig = body.request.generationConfig;
-    if (!generationConfig) {
-      return;
-    }
-
-    const outputCap = this.getModelOutputCap(accountId, model);
-    const thinkingBudgetCap = this.getModelThinkingBudget(accountId, model);
-    const normalizedModel = this.normalizeModelIdentifier(model).toLowerCase();
-    const isClaudeModel = normalizedModel.includes('claude');
-    const thinkingConfig = generationConfig.thinkingConfig as
-      | ({ thinkingLevel?: string; thinkingBudget?: number } & Record<string, unknown>)
-      | undefined;
-    const adaptiveSentinel =
-      thinkingConfig &&
-      (isString(thinkingConfig.thinkingLevel) ||
-        thinkingConfig.thinkingBudget === -1 ||
-        thinkingConfig.thinkingBudget === 32768);
-
-    if (thinkingConfig) {
-      if (!isClaudeModel && isString(thinkingConfig.thinkingLevel)) {
-        const converted = this.resolveThinkingLevelBudget(thinkingConfig.thinkingLevel);
-        if (converted !== undefined) {
-          thinkingConfig.thinkingBudget = converted;
-        }
-        delete thinkingConfig.thinkingLevel;
-      }
-
-      if (isNumber(thinkingConfig.thinkingBudget) && thinkingConfig.thinkingBudget < 0) {
-        thinkingConfig.thinkingBudget = Math.min(thinkingBudgetCap, 24576);
-      }
-
-      if (
-        isNumber(thinkingConfig.thinkingBudget) &&
-        Number.isFinite(thinkingConfig.thinkingBudget)
-      ) {
-        thinkingConfig.thinkingBudget = Math.min(
-          Math.floor(thinkingConfig.thinkingBudget),
-          Math.max(0, outputCap - 1),
-          thinkingBudgetCap,
-        );
-
-        if (adaptiveSentinel) {
-          if (
-            generationConfig.maxOutputTokens === undefined ||
-            generationConfig.maxOutputTokens < 131072
-          ) {
-            generationConfig.maxOutputTokens = 131072;
-          }
-        } else if (
-          generationConfig.maxOutputTokens === undefined ||
-          generationConfig.maxOutputTokens <= thinkingConfig.thinkingBudget
-        ) {
-          const hasExplicitMax = generationConfig.maxOutputTokens !== undefined;
-          const overhead = hasExplicitMax ? 8192 : 32768;
-          const minRequired = Math.min(outputCap, thinkingConfig.thinkingBudget + overhead);
-          generationConfig.maxOutputTokens = minRequired;
-        }
-      }
-    }
-
-    if (
-      isNumber(generationConfig.maxOutputTokens) &&
-      Number.isFinite(generationConfig.maxOutputTokens)
-    ) {
-      generationConfig.maxOutputTokens = Math.min(
-        Math.floor(generationConfig.maxOutputTokens),
-        outputCap,
-      );
-    }
+    this.generationConstraints.applyInternalGenerationConstraints(body, model, accountId);
   }
 
   private createGeminiInternalRequest(
@@ -868,7 +716,7 @@ export class ProxyService {
       if (!token) {
         throw new Error('No available accounts (all exhausted or rate limited)');
       }
-      const effectiveTargetModel = this.tokenManager.resolveDynamicModelForAccount(
+      const effectiveTargetModel = this.accountLeaseService.resolveDynamicModelForAccount(
         token.id,
         targetModel,
       );
@@ -1733,44 +1581,7 @@ export class ProxyService {
   }
 
   private resolveTargetModel(model: string): string {
-    const normalizedModel = model.replace(/^models\//i, '').trim();
-    const config = getServerConfig();
-    const configuredMapping = {
-      ...(config?.custom_mapping ?? {}),
-      ...(config?.anthropic_mapping ?? {}),
-    };
-
-    const customExactMapping: Record<string, string> = {};
-    const wildcardMapping: Array<{
-      pattern: RegExp;
-      target: string;
-    }> = [];
-
-    for (const [key, target] of Object.entries(configuredMapping)) {
-      if (!key || !target) {
-        continue;
-      }
-
-      if (key.includes('*')) {
-        const escaped = key.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*');
-        wildcardMapping.push({
-          pattern: new RegExp(`^${escaped}$`, 'i'),
-          target,
-        });
-        continue;
-      }
-
-      customExactMapping[key] = target;
-    }
-
-    for (const wildcardRule of wildcardMapping) {
-      if (wildcardRule.pattern.test(normalizedModel)) {
-        return wildcardRule.target;
-      }
-    }
-
-    const routedModel = resolveModelRoute(normalizedModel, customExactMapping, {}, {});
-    return normalizeGeminiModelAlias(routedModel);
+    return this.modelRoutingPolicy.resolveTargetModel(model);
   }
 
   private async applyUpstreamPenalty(
@@ -1778,133 +1589,19 @@ export class ProxyService {
     model: string,
     error: unknown,
   ): Promise<void> {
-    this.tokenManager.recordParityError();
-
-    if (error instanceof UpstreamRequestError) {
-      const status = error.status;
-      if (status === 401 || status === 403) {
-        this.tokenManager.markAsForbidden(accountId);
-        return;
-      }
-
-      await this.tokenManager.markFromUpstreamError({
-        accountIdOrEmail: accountId,
-        status,
-        retryAfter: error.headers?.retryAfter,
-        body: error.body,
-        model,
-      });
-      return;
-    }
-
-    if (!(error instanceof Error)) {
-      return;
-    }
-
-    this.logger.warn(`Upstream request failed for account ${accountId}: ${error.message}`);
-    const penaltyDecision = this.classifyUpstreamFailure(error.message);
-    if (!penaltyDecision.retry) {
-      return;
-    }
-
-    if (penaltyDecision.markAsForbidden) {
-      this.tokenManager.markAsForbidden(accountId);
-      return;
-    }
-
-    if (penaltyDecision.markAsRateLimited) {
-      this.tokenManager.markAsRateLimited(accountId);
-    }
+    await this.retryPolicy.applyUpstreamPenalty(accountId, model, error);
   }
 
   private resolveGraceRetryDelay(error: unknown): number | null {
-    if (!(error instanceof UpstreamRequestError) || error.status !== 429) {
-      return null;
-    }
-
-    const errorText = [error.body, error.message].filter(isString).join('\n');
-    const retryDelayMs = parseRetryDelayMilliseconds(errorText);
-    if (retryDelayMs === null || !shouldGraceRetry(retryDelayMs)) {
-      return null;
-    }
-
-    return retryDelayMs + GRACE_RETRY_BUFFER_MS;
+    return this.retryPolicy.resolveGraceRetryDelay(error);
   }
 
-  private classifyUpstreamFailure(errorMessage: string): {
-    retry: boolean;
-    markAsForbidden: boolean;
-    markAsRateLimited: boolean;
-  } {
-    const normalizedErrorMessage = errorMessage.toLowerCase();
-    const isForbidden =
-      normalizedErrorMessage.includes('401') ||
-      normalizedErrorMessage.includes('unauthorized') ||
-      normalizedErrorMessage.includes('invalid_grant') ||
-      normalizedErrorMessage.includes('403') ||
-      normalizedErrorMessage.includes('permission_denied') ||
-      normalizedErrorMessage.includes('forbidden');
-
-    if (isForbidden) {
-      return {
-        retry: true,
-        markAsForbidden: true,
-        markAsRateLimited: false,
-      };
-    }
-
-    const isRateLimitedSignal =
-      normalizedErrorMessage.includes('429') ||
-      normalizedErrorMessage.includes('resource_exhausted') ||
-      normalizedErrorMessage.includes('quota') ||
-      normalizedErrorMessage.includes('rate_limit') ||
-      normalizedErrorMessage.includes('rate limit');
-
-    const shouldRetryByStatus =
-      normalizedErrorMessage.includes('408') ||
-      normalizedErrorMessage.includes('429') ||
-      normalizedErrorMessage.includes('500') ||
-      normalizedErrorMessage.includes('502') ||
-      normalizedErrorMessage.includes('503') ||
-      normalizedErrorMessage.includes('504');
-
-    const shouldRetryByKeyword =
-      normalizedErrorMessage.includes('resource_exhausted') ||
-      normalizedErrorMessage.includes('quota') ||
-      normalizedErrorMessage.includes('rate_limit') ||
-      normalizedErrorMessage.includes('timeout') ||
-      normalizedErrorMessage.includes('socket hang up') ||
-      normalizedErrorMessage.includes('empty response stream') ||
-      normalizedErrorMessage.includes('connection reset');
-
-    if (shouldRetryByStatus || shouldRetryByKeyword) {
-      return {
-        retry: true,
-        markAsForbidden: false,
-        markAsRateLimited: isRateLimitedSignal,
-      };
-    }
-
-    return {
-      retry: false,
-      markAsForbidden: false,
-      markAsRateLimited: false,
-    };
+  private classifyUpstreamFailure(errorMessage: string): ProxyUpstreamFailureClassification {
+    return this.retryPolicy.classifyUpstreamFailure(errorMessage);
   }
 
   private createModelSpecificHeaders(model: string | undefined): Record<string, string> {
-    if (!model) {
-      return {};
-    }
-
-    if (model.toLowerCase().includes('claude')) {
-      return {
-        'anthropic-beta':
-          'claude-code-20250219,interleaved-thinking-2025-05-14,fine-grained-tool-streaming-2025-05-14',
-      };
-    }
-
-    return {};
+    return this.modelRoutingPolicy.createModelSpecificHeaders(model);
   }
 
   private isProjectLicenseError(errorMessage: string): boolean {

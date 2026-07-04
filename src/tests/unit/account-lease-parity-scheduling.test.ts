@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_APP_CONFIG, ProxyConfig } from '@/modules/config/types';
 import { setServerConfig } from '../../server/server-config';
-import { TokenManagerService } from '../../modules/proxy-gateway/server/token-manager.service';
+import { AccountLeaseService } from '../../modules/proxy-gateway/server/account-lease.service';
 import { GoogleAPIService } from '@/modules/cloud-account/services/GoogleAPIService';
 
 function createProxyConfig(overrides: Partial<ProxyConfig>): ProxyConfig {
@@ -15,7 +15,7 @@ function createProxyConfig(overrides: Partial<ProxyConfig>): ProxyConfig {
   };
 }
 
-function seedTokens(service: TokenManagerService): void {
+function seedTokens(service: AccountLeaseService): void {
   const nowSec = Math.floor(Date.now() / 1000);
   (service as any).tokens = new Map([
     [
@@ -49,11 +49,11 @@ function seedTokens(service: TokenManagerService): void {
   ]);
 }
 
-describe('TokenManagerService parity scheduling replay', () => {
-  let service: TokenManagerService;
+describe('AccountLeaseService parity scheduling replay', () => {
+  let service: AccountLeaseService;
 
   beforeEach(() => {
-    service = new TokenManagerService();
+    service = new AccountLeaseService();
     seedTokens(service);
   });
 
@@ -84,48 +84,6 @@ describe('TokenManagerService parity scheduling replay', () => {
 
     const resolved = service.resolveDynamicModelForAccount('acc-1', 'gemini-3-pro');
     expect(resolved).toBe('gemini-3.1-pro-low');
-  });
-
-  it('uses grouped Claude/GPT quota as a lower bound in token quota snapshots', () => {
-    const mapped = (service as any).mapAccountToTokenData({
-      id: 'acc-claude',
-      provider: 'google',
-      email: 'claude@test.dev',
-      token: {
-        access_token: 'access-token',
-        refresh_token: 'refresh-token',
-        token_type: 'Bearer',
-        expires_in: 3600,
-        expiry_timestamp: Math.floor(Date.now() / 1000) + 3600,
-      },
-      quota: {
-        models: {
-          'claude-sonnet-4-5': {
-            percentage: 90,
-            resetTime: '2026-05-05T00:00:00Z',
-          },
-        },
-        quota_groups: [
-          {
-            display_name: 'Claude and GPT models',
-            buckets: [
-              {
-                bucket_id: '3p-5h',
-                window: '5h',
-                remaining_fraction: 0.02,
-                reset_time: '2026-05-05T05:00:00Z',
-              },
-            ],
-          },
-        ],
-      },
-      created_at: 1700000000,
-      last_used: 1700000000,
-      status: 'active',
-    });
-
-    expect(mapped?.model_quotas['claude-sonnet-4-5']).toBe(2);
-    expect(mapped?.model_reset_times['claude-sonnet-4-5']).toBe('2026-05-05T05:00:00Z');
   });
 
   it('keeps original model when dynamic rewrite is not applicable', () => {

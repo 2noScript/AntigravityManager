@@ -9,7 +9,7 @@ import { setServerConfig } from '../../server/server-config';
 import { DEFAULT_APP_CONFIG, ProxyConfig } from '@/modules/config/types';
 
 // Mock dependencies
-const mockTokenManager = {
+const mockAccountLeaseService = {
   getNextToken: vi.fn(),
   markAsRateLimited: vi.fn(),
   markAsForbidden: vi.fn(),
@@ -39,7 +39,7 @@ function createProxyConfig(overrides: Partial<ProxyConfig> = {}): ProxyConfig {
 // Subclass to access private method
 class TestableProxyService extends ProxyService {
   constructor() {
-    super(mockTokenManager as any, mockGeminiClient as any);
+    super(mockAccountLeaseService as any, mockGeminiClient as any);
   }
 
   public testProcessStream(stream: any, model: string = 'model'): Observable<string> {
@@ -223,7 +223,7 @@ describe('ProxyService Empty Stream Retry Logic', () => {
 
   it('injects Claude beta headers when handling Gemini-compatible Claude models', async () => {
     const service = new TestableProxyService();
-    mockTokenManager.getNextToken.mockResolvedValue(createToken());
+    mockAccountLeaseService.getNextToken.mockResolvedValue(createToken());
     mockGeminiClient.generateInternal.mockResolvedValue({
       candidates: [{ content: { parts: [{ text: 'ok' }] } }],
     });
@@ -347,7 +347,9 @@ describe('ProxyService Empty Stream Retry Logic', () => {
     const service = new TestableProxyService();
     const token1 = createToken('acc-1');
     const token2 = createToken('acc-2');
-    mockTokenManager.getNextToken.mockResolvedValueOnce(token1).mockResolvedValueOnce(token2);
+    mockAccountLeaseService.getNextToken
+      .mockResolvedValueOnce(token1)
+      .mockResolvedValueOnce(token2);
     mockGeminiClient.generateInternal
       .mockRejectedValueOnce(new Error('429 quota exceeded'))
       .mockResolvedValueOnce({
@@ -361,8 +363,8 @@ describe('ProxyService Empty Stream Retry Logic', () => {
       messages: [{ role: 'user', content: 'hello' }],
     } as any);
 
-    expect(mockTokenManager.getNextToken).toHaveBeenCalledTimes(2);
-    expect(mockTokenManager.markAsRateLimited).toHaveBeenCalledWith('acc-1');
+    expect(mockAccountLeaseService.getNextToken).toHaveBeenCalledTimes(2);
+    expect(mockAccountLeaseService.markAsRateLimited).toHaveBeenCalledWith('acc-1');
     expect((result as any).choices?.[0]?.message?.content).toBeDefined();
   });
 
@@ -370,7 +372,9 @@ describe('ProxyService Empty Stream Retry Logic', () => {
     const service = new TestableProxyService();
     const token1 = createToken('acc-1');
     const token2 = createToken('acc-2');
-    mockTokenManager.getNextToken.mockResolvedValueOnce(token1).mockResolvedValueOnce(token2);
+    mockAccountLeaseService.getNextToken
+      .mockResolvedValueOnce(token1)
+      .mockResolvedValueOnce(token2);
     mockGeminiClient.generateInternal
       .mockRejectedValueOnce(new Error('429 rate limit exceeded'))
       .mockResolvedValueOnce({
@@ -385,8 +389,8 @@ describe('ProxyService Empty Stream Retry Logic', () => {
       messages: [{ role: 'user', content: 'hello' }],
     } as any);
 
-    expect(mockTokenManager.getNextToken).toHaveBeenCalledTimes(2);
-    expect(mockTokenManager.markAsRateLimited).toHaveBeenCalledWith('acc-1');
+    expect(mockAccountLeaseService.getNextToken).toHaveBeenCalledTimes(2);
+    expect(mockAccountLeaseService.markAsRateLimited).toHaveBeenCalledWith('acc-1');
     expect((result as any).type).toBe('message');
   });
 
@@ -394,7 +398,9 @@ describe('ProxyService Empty Stream Retry Logic', () => {
     const service = new TestableProxyService();
     const token1 = createToken('acc-1');
     const token2 = createToken('acc-2');
-    mockTokenManager.getNextToken.mockResolvedValueOnce(token1).mockResolvedValueOnce(token2);
+    mockAccountLeaseService.getNextToken
+      .mockResolvedValueOnce(token1)
+      .mockResolvedValueOnce(token2);
     mockGeminiClient.generateInternal
       .mockRejectedValueOnce(new Error('429 quota exceeded'))
       .mockResolvedValueOnce({
@@ -406,14 +412,14 @@ describe('ProxyService Empty Stream Retry Logic', () => {
       contents: [{ role: 'user', parts: [{ text: 'hello' }] }],
     } as any);
 
-    expect(mockTokenManager.getNextToken).toHaveBeenCalledTimes(2);
-    expect(mockTokenManager.markAsRateLimited).toHaveBeenCalledWith('acc-1');
+    expect(mockAccountLeaseService.getNextToken).toHaveBeenCalledTimes(2);
+    expect(mockAccountLeaseService.markAsRateLimited).toHaveBeenCalledWith('acc-1');
     expect((result as any).candidates?.[0]?.content?.parts?.[0]?.text).toBe('ok');
   });
 
   it('does not include sessionId in Gemini internal generate payload', async () => {
     const service = new TestableProxyService();
-    mockTokenManager.getNextToken.mockResolvedValue(createToken('acc-1'));
+    mockAccountLeaseService.getNextToken.mockResolvedValue(createToken('acc-1'));
     mockGeminiClient.generateInternal.mockResolvedValue({
       candidates: [{ content: { parts: [{ text: 'ok' }] }, finishReason: 'STOP' }],
       usageMetadata: { totalTokenCount: 5 },
@@ -429,7 +435,7 @@ describe('ProxyService Empty Stream Retry Logic', () => {
 
   it('normalizes Gemini 3.1 preview alias to Gemini 3.1 Pro High for upstream', async () => {
     const service = new TestableProxyService();
-    mockTokenManager.getNextToken.mockResolvedValue(createToken('acc-1'));
+    mockAccountLeaseService.getNextToken.mockResolvedValue(createToken('acc-1'));
     mockGeminiClient.generateInternal.mockResolvedValue({
       candidates: [{ content: { parts: [{ text: 'ok' }] }, finishReason: 'STOP' }],
       usageMetadata: { totalTokenCount: 5 },
@@ -445,7 +451,7 @@ describe('ProxyService Empty Stream Retry Logic', () => {
 
   it('strips non-parity Gemini usage metadata fields', async () => {
     const service = new TestableProxyService();
-    mockTokenManager.getNextToken.mockResolvedValue(createToken('acc-1'));
+    mockAccountLeaseService.getNextToken.mockResolvedValue(createToken('acc-1'));
     mockGeminiClient.generateInternal.mockResolvedValue({
       candidates: [
         {
@@ -477,7 +483,7 @@ describe('ProxyService Empty Stream Retry Logic', () => {
 
   it('retries Gemini generate-content without project when project context is invalid', async () => {
     const service = new TestableProxyService();
-    mockTokenManager.getNextToken.mockResolvedValue(createToken('acc-1'));
+    mockAccountLeaseService.getNextToken.mockResolvedValue(createToken('acc-1'));
     mockGeminiClient.generateInternal
       .mockRejectedValueOnce(
         new Error(
@@ -493,7 +499,7 @@ describe('ProxyService Empty Stream Retry Logic', () => {
       contents: [{ role: 'user', parts: [{ text: 'hello' }] }],
     } as any);
 
-    expect(mockTokenManager.getNextToken).toHaveBeenCalledTimes(1);
+    expect(mockAccountLeaseService.getNextToken).toHaveBeenCalledTimes(1);
     expect(mockGeminiClient.generateInternal).toHaveBeenCalledTimes(2);
     expect(mockGeminiClient.generateInternal.mock.calls[0][0].project).toBe('project-1');
     expect(mockGeminiClient.generateInternal.mock.calls[1][0].project).toBeUndefined();
@@ -505,7 +511,7 @@ describe('ProxyService Empty Stream Retry Logic', () => {
     const service = new TestableProxyService();
     const token = createToken('acc-1');
     token.token.project_id = '';
-    mockTokenManager.getNextToken.mockResolvedValue(token);
+    mockAccountLeaseService.getNextToken.mockResolvedValue(token);
     mockGeminiClient.generateInternal.mockResolvedValue({
       candidates: [{ content: { parts: [{ text: 'ok' }] }, finishReason: 'STOP' }],
       usageMetadata: { totalTokenCount: 5 },
@@ -522,7 +528,7 @@ describe('ProxyService Empty Stream Retry Logic', () => {
 
   it('uses generate-content requestType for Gemini stream internal payload', async () => {
     const service = new TestableProxyService();
-    mockTokenManager.getNextToken.mockResolvedValue(createToken('acc-1'));
+    mockAccountLeaseService.getNextToken.mockResolvedValue(createToken('acc-1'));
     mockGeminiClient.streamGenerateInternal.mockResolvedValue(new EventEmitter());
 
     await service.handleGeminiStreamGenerateContent('models/gemini-2.5-flash', {

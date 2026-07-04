@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { DEFAULT_APP_CONFIG, ProxyConfig } from '@/modules/config/types';
 import { setServerConfig } from '../../server/server-config';
-import { TokenManagerService } from '../../modules/proxy-gateway/server/token-manager.service';
+import { AccountLeaseService } from '../../modules/proxy-gateway/server/account-lease.service';
 
 function createProxyConfig(overrides: Partial<ProxyConfig>): ProxyConfig {
   return {
@@ -14,7 +14,7 @@ function createProxyConfig(overrides: Partial<ProxyConfig>): ProxyConfig {
   };
 }
 
-function seedTokens(service: TokenManagerService): void {
+function seedTokens(service: AccountLeaseService): void {
   const nowSec = Math.floor(Date.now() / 1000);
   (service as any).tokens = new Map([
     [
@@ -47,10 +47,10 @@ function seedTokens(service: TokenManagerService): void {
 }
 
 describe('Parity rollout guard replay', () => {
-  let service: TokenManagerService;
+  let service: AccountLeaseService;
 
   beforeEach(() => {
-    service = new TokenManagerService();
+    service = new AccountLeaseService();
     seedTokens(service);
   });
 

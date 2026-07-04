@@ -6,7 +6,7 @@ import { Observable } from 'rxjs';
 
 import { ProxyService } from '../../modules/proxy-gateway/server/proxy.service';
 
-const mockTokenManager = {
+const mockAccountLeaseService = {
   getNextToken: vi.fn(),
   markAsRateLimited: vi.fn(),
   markAsForbidden: vi.fn(),
@@ -17,7 +17,7 @@ const mockGeminiClient = { streamGenerateInternal: vi.fn(), generateInternal: vi
 
 class TestableProxyService extends ProxyService {
   constructor() {
-    super(mockTokenManager as any, mockGeminiClient as any);
+    super(mockAccountLeaseService as any, mockGeminiClient as any);
   }
 
   public toAnthropic(request: any): any {
